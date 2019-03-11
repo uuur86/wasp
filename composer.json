@@ -2,7 +2,7 @@
 	"description": "Settings field framework for wordpress",
 	"name": "uuur86/wpsettings",
 	"type": "library",
-	"license": "GPLV3",
+	"license": "GPL-3.0-or-later",
 	"support": {
 		"source": "https://github.com/uuur86/wpsettings"
 	},
