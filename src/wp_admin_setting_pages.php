@@ -12,6 +12,7 @@
  * https://github.com/uuur86/wpsettings
  */
 
+namespace wpsettings;
 
 class wp_admin_setting_pages {
 
