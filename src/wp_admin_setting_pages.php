@@ -1,18 +1,16 @@
 <?php
 
 /**
- * WP Settings framework
+ * Settings framework for Wordpress
  *
- * @author Uğur Biçer <uuur86@yandex.com>
- * @copyright 2018 - 2019, Uğur Biçer
- * @license GPLv3
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  *
- * https://github.com/uuur86/wpsettings
+ * @package wpsettings
+ * @author Uğur Biçer <uuur86@yandex.com>
+ * @license GPLv3 or later
+ * @version 1.1.3
  */
-
-namespace wpsettings;
 
 class wp_admin_setting_pages {
 
@@ -43,6 +41,9 @@ class wp_admin_setting_pages {
     // Array All input fields
     protected $fields;
 
+    // The other hidden fields
+	protected $hidden_fields;
+
     // Array sanitize info
     protected $sanitize;
 
@@ -52,8 +53,14 @@ class wp_admin_setting_pages {
     // String section name
     protected $section;
 
-    // String segment name
-    protected $segment;
+	// String current segment name
+	protected $segment;
+
+    // Array segment names recursively
+    protected $segments;
+
+    // String return_url
+	protected $return_url;
 
 
 
@@ -104,22 +111,57 @@ class wp_admin_setting_pages {
 
 
 
-    public function set_segment( $name ) {
-        if( !empty( $name ) )
-            $this->segment = $name;
+	/**
+	 * This function makes configuration of segment variables
+	 */
+	protected function check_segment() {
+
+    	if( !is_array( $this->segments ) ) {
+
+		    if ( isset( $_POST[ 'segment_name' ] ) ) {
+			    $segment        = $_POST[ 'segment_name' ];
+			    $this->segments = explode( '/', $segment );
+
+			    if( empty( $this->segment ) ) {
+			    	$this->set_segment( $segment );
+			    }
+		    }
+	    }
     }
 
 
 
-    public function if_segment( $name ) {
-        if( isset( $_POST[ 'segment_name' ] ) ) {
-            if( $name == $_POST[ 'segment_name' ] )
-                return true;
-        }
+	/**
+	 * This function sets the segment variable
+	 *
+	 * @param $segment
+	 */
+	public function set_segment( $segment ) {
+        if( !empty( $segment ) ) {
+	        $this->segments = explode( '/', $segment );
+        	$segment = current( $this->segments );
 
-        if( isset( $this->segment ) ) {
-            if( $name == $this->segment )
-                return true;
+			if( !empty( $segment ) )
+				$this->segment = $segment;
+        }
+    }
+
+
+	/**
+	 * This function checks for given segment is the current segment
+	 *
+	 * @param $name
+	 *
+	 * @return bool
+	 */
+	public function if_segment( $name ) {
+		$this->check_segment();
+
+        if( !empty( $this->segment ) ) {
+            if( $name == $this->segment ) {
+	            $this->segment = next( $this->segments );
+            	return true;
+            }
         }
 
         return false;
@@ -127,7 +169,12 @@ class wp_admin_setting_pages {
 
 
 
-    public function add_section( $name, $title, $desc ) {
+	/**
+	 * @param $name
+	 * @param $title
+	 * @param $desc
+	 */
+	public function add_section( $name, $title, $desc ) {
 
         if( empty( $name ) )
             return;
@@ -141,7 +188,7 @@ class wp_admin_setting_pages {
 
         add_settings_section(
             $this->section . '_section', // Section ID
-            '',//esc_html__( $title, $this->domain ), // Callback for an optional title
+            '',
             array( $this, 'settings_field_section_callback' ), // Admin page to add section to
             $this->section . ''
         );
@@ -149,7 +196,10 @@ class wp_admin_setting_pages {
 
 
 
-    public function settings_field_section_callback() {
+	/**
+	 * This function prints out the settings field section html code
+	 */
+	public function settings_field_section_callback() {
         $current = current( $this->sections );
         echo '<h2 class="title">' . esc_html__( $current[ 'title' ], $this->domain ) . '</h2>';
         echo '<p class="description">' . esc_html__( $current[ 'desc' ], $this->domain ) . '</p>';
@@ -158,7 +208,14 @@ class wp_admin_setting_pages {
 
 
 
-    protected function get_settings( $name ) {
+	/**
+	 * This function gets the wordpress options about defined setting
+	 *
+	 * @param $name
+	 *
+	 * @return string
+	 */
+	protected function get_settings( $name ) {
         if( ( $options = get_option( $this->settings_name, false ) ) !== false ) {
             if( isset( $options[ $name ] ) )
                 return $options[ $name ];
@@ -168,25 +225,51 @@ class wp_admin_setting_pages {
 
 
 
-    public function add_new_field( $type, $id, $label, $options = null, $sanitize = 'text_field' ) {
-        $field_type_callback = 'settings_field_' . $type . '_callback';
+	/**
+	 * It registers the values to sanitize array for using in middleware controls
+	 *
+	 * @param string $type
+	 * @param string $id
+	 * @param array|string $options
+	 * @param string $sanitize [ options, regex, text_field, textarea_field, email, file_name etc.. ]
+	 */
+	function register_sanitize( $type, $id, $options, $sanitize ) {
 
-        if( in_array( $type, array( 'radio', 'select' ) ) ) {
+	    if( in_array( $type, array( 'radio', 'select' ) ) ) {
 
-            if( is_array( $options ) ) {
-                $this->sanitize[ $id ] = array( 'type' => 'options', 'values' => array_keys( $options ) );
-            }
-        }
-        else {
-            $this->sanitize[ $id ] = array( 'type' => $sanitize, 'regex' => $options );
-        }
+		    if( is_array( $options ) ) {
+			    $this->sanitize[ $id ] = array( 'type' => 'options', 'values' => array_keys( $options ) );
+		    }
+	    }
+	    else if( $sanitize == 'regex' ) {
+		    $this->sanitize[ $id ] = array( 'type' => $sanitize, 'pattern' => $options );
+	    }
+	    else {
+		    $this->sanitize[ $id ] = array( 'type' => $sanitize, 'value' => $options );
+	    }
+    }
+
+
+	/**
+	 * This function adds new field to defined setting options
+	 *
+	 * @param string $type
+	 * @param string $id
+	 * @param string $label
+	 * @param null|array $options
+	 * @param string $sanitize
+	 */
+	public function add_new_field( $type, $id, $label, $options = null, $sanitize = 'text_field' ) {
+	    $field_type_callback = 'settings_field_' . $type . '_callback';
+
+	    $this->register_sanitize( $type, $id, $options, $sanitize );
 
         $field_args = [
             'label' => esc_html__( $label, $this->domain ),
             'name' => esc_html( $id )
         ];
 
-        if( !empty( $options ) ) {
+        if( is_array( $options ) ) {
             $field_args[ 'options' ] = $options;
         }
 
@@ -202,31 +285,23 @@ class wp_admin_setting_pages {
 
 
 
-    public function add_hidden_field( $id, $value ) {
-        $field_args = [
-            'value' => esc_html( $value ),
-            'name' => esc_html( $id )
-        ];
+	/**
+	 * This function registers hidden field for moving variable data
+	 * to options page without creating an option
+	 *
+	 * @param $id
+	 * @param $value
+	 * @param bool $save
+	 */
+	public function add_hidden_field( $id, $value, $save = false ) {
+    	$id = esc_html( $id );
+    	$value = esc_html( $value );
 
-        add_settings_field(
-            $this->settings_name . '_' . $id,
-            '',
-            array( $this, 'settings_field_hidden_input_callback' ),
-            $this->section,
-            $this->section . '_section',
-            $field_args
-        );
-    }
+    	if( $save ) {
+		    $this->register_sanitize( 'text', $id, $value, '' );
+	    }
 
-
-
-    public function settings_field_hidden_input_callback( $args ) {
-        $value = $args[ 'value' ];
-
-        if( !empty( $value ) ) {
-            $value = esc_html( $value );
-        }
-        echo '<input type="hidden" id="' . $this->settings_name . '_' . $args[ 'name' ] . '_input_text" name="' . $this->settings_name . '[' . $args[ 'name' ] . ']" value="' . $value . '"/>';
+	    $this->hidden_fields[ $id ] = $value;
     }
 
 
@@ -284,24 +359,12 @@ class wp_admin_setting_pages {
                 $options .= $opt_val . '</label> &nbsp;<br/>';
             }
         }
-        else {
-            $value_ = '';
-            if( !empty( $value ) ) {
-                $value_ = esc_html( $value );
-            }
-
-            $id = $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox';
-            $name = $this->settings_name . '[' . $args[ 'name' ] . ']';
-
-            $options .= '<label for="' . $id . '">';
-            $options .= '<input type="checkbox"  name="' . $name . '" id="' . $id . '" value="' . $args[ 'options' ] . '" ' . checked( $args[ 'options' ], $value_, false ) . '/>';
-            $options .= '</label> &nbsp;<br/>';
-        }
 
         $options .= '</fieldset>';
 
         echo $options;
     }
+
 
 
     public function settings_field_radio_callback( $args ) {
@@ -330,15 +393,26 @@ class wp_admin_setting_pages {
     }
 
 
-    public function settings_input_middleware( $inputs ) {
+	/**
+	 * This function sanitizes defined setting options
+	 *
+	 * @param $inputs
+	 *
+	 * @return mixed
+	 */
+	public function settings_input_middleware( $inputs ) {
 
         foreach( $this->sanitize as $input_key => $input_value ) {
 
-            if( !isset( $input_value[ 'type' ] ) )
-                continue;
+	        if( !isset( $inputs[ $input_key ] ) )
+		        $inputs[ $input_key ] = sanitize_title( $_POST[ $input_key ] );
 
-            if( $input_value[ 'type' ] == 'regex' && isset( $input_value[ 'regex' ] ) ) {
-                if( preg_match( "#^" . $input_value[ 'regex' ] . "$#ui", $inputs[ $input_key ], $matched ) )
+	        if( !isset( $input_value[ 'type' ] ) ) {
+		        continue;
+	        }
+
+            if( $input_value[ 'type' ] == 'regex' && isset( $input_value[ 'pattern' ] ) ) {
+                if( preg_match( "#^" . $input_value[ 'pattern' ] . "$#ui", $inputs[ $input_key ], $matched ) )
                     $inputs[ $input_key ] = $matched[ 0 ];
                 else
                     $inputs[ $input_key ] = '';
@@ -365,11 +439,15 @@ class wp_admin_setting_pages {
 
 
 
-    public function register() {
+	/**
+	 * This function registers setting options
+	 */
+	public function register() {
         global $_POST;
 
         if( ( $all_settings = $this->get_indexes() ) !== false && isset( $_POST[ 'setting_name' ] ) ) {
             $requested_option_page = $_POST[ 'setting_name' ];
+            
             if( in_array( $requested_option_page, $all_settings ) )
                 register_setting( $this->page_name, $requested_option_page, array( $this, 'settings_input_middleware' ) );
         }
@@ -379,15 +457,26 @@ class wp_admin_setting_pages {
     }
 
 
-
-    public function put_hidden_fields() {
-        echo '<input type="hidden" name="segment_name" value="' . $this->segment . '"/>';
-        echo '<input type="hidden" name="setting_name" value="' . $this->settings_name . '"/>';
+	/**
+	 * This function adds the hidden fields to the setting form
+	 */
+	public function put_hidden_fields() {
+    	foreach ( $this->hidden_fields as $name => $value ) {
+		    echo '<input type="hidden" name="' . $name . '" value="' . $value . '"/>';
+	    }
     }
 
 
+	/**
+	 * This function runs all setting options. Also prints out as html output all of them.
+	 *
+	 * @return bool
+	 */
+	public function run() {
 
-    public function run() {
+    	if( ( empty( $this->page_name ) ) || ( !isset( $this->sections ) ) || ( !is_array( $this->sections ) ) )
+    		return false;
+
         // Display necessary hidden fields for settings
         settings_fields( $this->page_name );
         // Display the settings sections for the page
@@ -395,9 +484,28 @@ class wp_admin_setting_pages {
             do_settings_sections( $sec_name );
         }
 
+        $this->set_return_url();
+
+        if( !empty( $this->segment ) )
+			$this->add_hidden_field( 'segment_name', $this->segment );
+
+	    $this->add_hidden_field( 'setting_name', $this->settings_name );
         $this->put_hidden_fields();
         // Default Submit Button
         submit_button();
+        return true;
+    }
+
+
+
+    function set_return_url() {
+    	if( ( $row_index = $this->last_index() ) !== false ) {
+		    $this->return_url = add_query_arg( [ 'edit' => $row_index ] );
+	    }
+
+	    if( !empty( $this->return_url ) ) {
+		    $this->add_hidden_field( '_wp_http_referer', $this->return_url );
+	    }
     }
 
 
@@ -416,4 +524,3 @@ class wp_admin_setting_pages {
     }
 
 }
-
