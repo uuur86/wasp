@@ -9,7 +9,7 @@
  * @package wpsettings
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 1.3
+ * @version 1.3.1
  */
 
 namespace wpsettings;
@@ -265,18 +265,22 @@ class wp_admin_setting_pages {
 	/**
 	 * This function prints out the settings field section html code
 	 */
-	 public function settings_field_section_callback() {
- 		$current = current( $this->sections );
+	 public function settings_field_section_callback( $args ) {
 
- 		if( !empty( $current[ 'html_before' ] ) ) echo $current[ 'html_before' ];
+		if( !isset( $args[ 'id' ] ) ) return;
 
- 		echo '<h2 class="title">' . esc_html__( $current[ 'title' ], $this->domain ) . '</h2>';
- 		echo '<p class="description">' . esc_html__( $current[ 'desc' ], $this->domain ) . '</p>';
+		if( ( $sec_pos = strpos( $args[ 'id' ], '_section' ) ) === -1 ) return;
 
- 		if( !empty( $current[ 'html_after' ] ) ) echo $current[ 'html_after' ];
+		$current = substr( $args[ 'id' ], 0, $sec_pos );
+		$current = $this->sections[ $current ];
 
- 		next( $this->sections );
- 	}
+		if( !empty( $current[ 'html_before' ] ) ) echo $current[ 'html_before' ];
+
+		echo '<h2 class="title">' . esc_html__( $current[ 'title' ], $this->domain ) . '</h2>';
+		echo '<p class="description">' . esc_html__( $current[ 'desc' ], $this->domain ) . '</p>';
+
+		if( !empty( $current[ 'html_after' ] ) ) echo $current[ 'html_after' ];
+	}
 
 
 
@@ -468,7 +472,7 @@ class wp_admin_setting_pages {
 				$this->current_section[ 'id' ] . '_section', // Section ID
 				'',
 				array( $this, 'settings_field_section_callback' ), // Admin page to add section to
-				$this->current_section[ 'id' ] . ''
+				$this->current_section[ 'id' ] // Page
 			);
 
 			$this->current_section = null;
@@ -938,6 +942,7 @@ class wp_admin_setting_pages {
 	}
 
 
+
 	/**
 	 * Manual way to running form. That prints all html form starter tags and fires all start process.
 	 * @since 1.3.0
@@ -965,6 +970,7 @@ class wp_admin_setting_pages {
 	 * @since 1.3.0
 	 */
 	public function form_end( $section = null ) {
+		$button_text = null;
 
 		if( empty( $section ) ) {
 
@@ -976,6 +982,7 @@ class wp_admin_setting_pages {
 		}
 
 		$this->submit( $button_text );
+
 		echo "</form>";
 	}
 
@@ -1024,4 +1031,3 @@ class wp_admin_setting_pages {
 		return false;
 	}
 }
-
