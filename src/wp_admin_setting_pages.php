@@ -662,9 +662,10 @@ class wp_admin_setting_pages {
 				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
 				$name	= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
 
-				$options .= '<label for="' . $id . '">' . $opt_val . '<br/>';
-				$options .= '<input type="text"  name="' . $name . '" id="' . $id . '" value="' . $value_ . '" />';
-				$options .= '</label> &nbsp;<br/>';
+				$options .= '<span>';
+				$options .= '	<input type="text"  name="' . $name . '" id="' . $id . '" value="' . $value_ . '" />';
+				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
+				$options .= '</span>';
 			}
 		}
 
@@ -729,9 +730,10 @@ class wp_admin_setting_pages {
 				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
 				$name	= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
 
-				$options .= '<label for="' . $id . '">';
-				$options .= '<input type="checkbox"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . checked( $opt_key, $value_, false ) . '/>';
-				$options .= $opt_val . '</label> &nbsp;<br/>';
+				$options .= '<span>';
+				$options .= '	<input type="checkbox"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . checked( $opt_key, $value_, false ) . '/>';
+				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
+				$options .= '</span>';
 			}
 		}
 
@@ -755,9 +757,10 @@ class wp_admin_setting_pages {
 				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_radio_' . $opt_key;
 				$name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
 
-				$options .= '<label for="' . $id . '">';
-				$options .= '<input type="radio"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . checked( $opt_key, $value, false ) . '/>';
-				$options .= $opt_val . '</label> &nbsp;<br/>';
+				$options .= '<span>';
+				$options .= '	<input type="radio"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . checked( $opt_key, $value, false ) . '/>';
+				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
+				$options .= '</span>';
 			}
 		}
 
