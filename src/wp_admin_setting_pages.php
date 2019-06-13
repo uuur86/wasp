@@ -9,8 +9,13 @@
  * @package wpsettings
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 1.2.0
+ * @version 1.3
  */
+
+namespace wpsettings;
+
+if( class_exists( "\\wpsettings\\wp_admin_setting_pages" ) ) { return; }
+
 
 class wp_admin_setting_pages {
 
@@ -97,11 +102,6 @@ class wp_admin_setting_pages {
 	/**
 	* @since 1.2.0
 	*/
-	protected $form_hook = null;
-
-	/**
-	* @since 1.2.0
-	*/
 	protected $has_media = false;
 
 	/**
@@ -184,16 +184,6 @@ class wp_admin_setting_pages {
 	}
 
 
-	/**
-	* @since 1.2.0
-	*/
-	function load_form() {
-
-		if( empty( $this->form_hook ) ) return;
-
-		add_action( 'admin_init', $this->form_hook );
-	}
-
 
 	/**
 	* @since 1.2.0
@@ -203,13 +193,12 @@ class wp_admin_setting_pages {
 	}
 
 
+
 	/**
 	* @since 1.2.0
 	*/
 	function wp_form_init( $func_hook ) {
-		$this->form_hook = $func_hook;
-
-		add_action( "plugins_loaded", array( $this, "load_form" ) );
+		add_action( "admin_init", $func_hook );
 	}
 
 
@@ -787,7 +776,15 @@ class wp_admin_setting_pages {
 
 		foreach( $this->sanitize as $input_key => $input_value ) {
 
-			if( !isset( $inputs[ $input_key ] ) ) $inputs[ $input_key ] = sanitize_title( $_POST[ $input_key ] );
+			// Set hidden post values
+			if( !isset( $inputs[ $input_key ] ) ){
+
+				if( isset( $_POST[ $input_key ] ) ) {
+					$inputs[ $input_key ] = sanitize_post( $_POST[ $input_key ] );
+
+					continue;
+				}
+			}
 
 			if( !isset( $input_value[ 'type' ] ) ) continue;
 
@@ -851,16 +848,11 @@ class wp_admin_setting_pages {
 			$inputs[ $input_key ] = call_user_func( $func_name, $inputs[ $input_key ] );
 		}
 
-		// Adding the old values
-		if( ( !empty( $this->input_fields ) ) && ( !empty( $this->setting_values ) ) ) {
-			$missed_fields = array_diff( array_keys( $this->setting_values ), $this->input_fields );
-
-			foreach( $missed_fields as $missed_input ) {
-				$inputs[ $missed_input ] = $this->setting_values[ $missed_input ];
-			}
-		}
-
+		// Mark it as updated ( settiings saved )
 		update_option( $this->updated_name, '1' );
+
+		// Merge with prior saved settings
+		$inputs += $this->setting_values;
 
 		return $inputs;
 	}
@@ -907,18 +899,32 @@ class wp_admin_setting_pages {
 
 	/**
 	 * This function runs all setting options. Also prints out as html output all of them.
-	 *
-	 * @return bool
 	 */
-	public function run( $section = null, $button_text = null ) {
-		$this->form();
+	 public function run( $section = null, $button_text = null ) {
 
-		if( ( empty( $this->page_name ) ) || ( !isset( $this->sections ) ) || ( !is_array( $this->sections ) ) ) {
-			return false;
-		}
+ 		$this->form_start( $section );
+ 		$this->run_section( $section );
+ 		$this->form_end( $section );
+ 	}
 
-		// Display necessary hidden fields for settings
-		settings_fields( $this->page_name );
+
+
+	public function form() {
+
+		if( $this->has_media ) echo '<form method="post" action="options.php" enctype="multipart/form-data">';
+		else echo '<form method="post" action="options.php">';
+	}
+
+
+
+	/**
+	 * Manual way to running form. This function runs all or particular setting section.
+	 *
+	 * @param string $section
+	 *
+	 * @since 1.3.0
+	 */
+	public function run_section( $section = null ) {
 
 		if( empty( $section ) ) {
 		// Display the settings sections for the page
@@ -929,31 +935,48 @@ class wp_admin_setting_pages {
 		else {
 			do_settings_sections( $section );
 		}
+	}
+
+
+	/**
+	 * Manual way to running form. That prints all html form starter tags and fires all start process.
+	 * @since 1.3.0
+	 */
+	public function form_start( $section = null ) {
+
+		if( ( empty( $this->page_name ) ) || ( !isset( $this->sections ) ) || ( !is_array( $this->sections ) ) ) {
+			return false;
+		}
+
+		// Print HTML form tag
+		$this->form();
+
+		// Display necessary hidden fields for settings
+		settings_fields( $this->page_name );
 
 		$this->add_hidden_field( 'setting_name', $this->settings_name );
-
 		$this->put_hidden_fields();
-
-		if( empty( $section ) ) {
-			$button_text = end( $this->submit_name );
-		}
-		else {
-			$button_text = $this->submit_name[ $section ];
-		}
-
-		$this->submit( $button_text );
-
-		echo "</form>";
-
-		return true;
 	}
 
 
 
-	public function form() {
+	/**
+	 * Manual way to running form. That prints all html form ender tags and fires all end process.
+	 * @since 1.3.0
+	 */
+	public function form_end( $section = null ) {
 
-		if( $this->has_media ) echo '<form method="post" action="options.php" enctype="multipart/form-data">';
-		else echo '<form method="post" action="options.php">';
+		if( empty( $section ) ) {
+
+			if( is_array( $this->submit_name ) ) $button_text = end( $this->submit_name );
+			else $button_text = $this->submit_name;
+		}
+		elseif( isset( $this->submit_name[ $section ] ) ) {
+			$button_text = $this->submit_name[ $section ];
+		}
+
+		$this->submit( $button_text );
+		echo "</form>";
 	}
 
 
@@ -1000,5 +1023,5 @@ class wp_admin_setting_pages {
 
 		return false;
 	}
-
 }
+
