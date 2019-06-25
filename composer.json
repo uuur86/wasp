@@ -1,10 +1,10 @@
 {
-	"description": "Settings field framework for wordpress",
-	"name": "uuur86/wpsettings",
+	"description": "WP Admin Settings Page",
+	"name": "uuur86/wasp",
 	"type": "library",
 	"license": "GPL-3.0-or-later",
 	"support": {
-		"source": "https://github.com/uuur86/wpsettings"
+		"source": "https://github.com/uuur86/wasp"
 	},
 	"authors": [
 		{
@@ -15,7 +15,7 @@
 	],
 	"autoload": {
     		"psr-4": {
-      			"wpsettings\\": "src/"
+      			"WaspCreators\\": "src/"
 		}
 	},
 	"require": {
