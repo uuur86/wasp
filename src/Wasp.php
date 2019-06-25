@@ -110,7 +110,7 @@ class Wasp {
 	protected $errors = [];
 	
 	/**
-	* @since 1.2.0
+	* @since 2.0.2
 	*/
 	protected $user_func = null;
 
