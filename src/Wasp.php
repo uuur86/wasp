@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.0.1
+ * @version 2.0.2
  */
 
 namespace WaspCreators;
@@ -108,11 +108,20 @@ class Wasp {
 	* @since 1.2.0
 	*/
 	protected $errors = [];
+	
+	/**
+	* @since 1.2.0
+	*/
+	protected $user_func = null;
 
 
 
 	public function __construct( $page, $setting_name, $domain, $row = false ) {
 		global $pagenow;
+		
+		//if( !function_exists( '\settings_fields' ) ) return;
+		
+		//if( !function_exists( '\is_admin' ) ) return;
 
 		if( !isset( $page ) || $page === false || empty( $page ) || !\is_admin() ) return;
 		
@@ -187,6 +196,7 @@ class Wasp {
 	
 	
 	function __call( $method, $args ) {
+	
 		echo 'Medhod name ' . $method . ' does not exists!';
 	}
 
@@ -197,6 +207,12 @@ class Wasp {
 	*/
 	function is_ready() {
 		return $this->is_ready;
+	}
+	
+	
+	
+	function user_func_hook() {
+		call_user_func( $this->user_func, $this );
 	}
 
 
@@ -209,9 +225,8 @@ class Wasp {
 		if( empty( $hook ) ) return;
 		
 		if( !is_array( $hook ) ) {
-			$mock_obj = new \stdClass();
-			$mock_obj->{ $hook } = call_user_func( $hook, $this );
-			\add_action( 'admin_init', [ $mock_obj, $hook ] );
+			$this->user_func = $hook;
+			\add_action( "admin_init", [ $this, 'user_func_hook' ] );
 			
 			return;
 		}
