@@ -1,23 +1,24 @@
 <?php
 
 /**
- * Settings framework for Wordpress
+ * Wasp - WP Admin Settings Page
+ * Settings Page Creator for Wordpress
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  *
- * @package wpsettings
+ * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 1.3.1
+ * @version 2.0.0
  */
 
-namespace wpsettings;
+namespace WaspCreators;
 
-if( class_exists( "\\wpsettings\\wp_admin_setting_pages" ) ) { return; }
+if( class_exists( "\\WaspCreators\\Wasp" ) ) { return; }
 
 
-class wp_admin_setting_pages {
+class Wasp {
 
 	// String form title
 	protected $title;
