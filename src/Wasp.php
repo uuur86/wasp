@@ -10,13 +10,12 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.0.0
+ * @version 2.0.1
  */
 
 namespace WaspCreators;
 
-if( class_exists( "\\WaspCreators\\Wasp" ) ) { return; }
-
+if( class_exists( "\\WaspCreators\\Wasp" ) || !defined( 'ABSPATH' ) ) { return; }
 
 class Wasp {
 
@@ -98,7 +97,7 @@ class Wasp {
 	/**
 	* @since 1.2.0
 	*/
-	protected $is_ready = true;
+	protected $is_ready = false;
 
 	/**
 	* @since 1.2.0
@@ -115,7 +114,9 @@ class Wasp {
 	public function __construct( $page, $setting_name, $domain, $row = false ) {
 		global $pagenow;
 
-		if( !isset( $page ) || $page === false || empty( $page ) || !is_admin() ) return false;
+		if( !isset( $page ) || $page === false || empty( $page ) || !\is_admin() ) return;
+		
+		$this->is_ready = true;
 
 		if( $pagenow !== 'options.php' ) {
 
@@ -144,7 +145,7 @@ class Wasp {
 			if( ( $this->indexes = $this->get_indexes() ) !== false && is_array( $this->indexes ) ) {
 				$last_index		= array_flip( $this->indexes );
 				$last_index		= end( $last_index );
-				$last_settings	= get_option( $this->indexes[ $last_index ] );
+				$last_settings	= \get_option( $this->indexes[ $last_index ] );
 
 				if( $last_settings !== false && empty( $row ) ) {
 					$row = intval( $last_index );
@@ -158,30 +159,35 @@ class Wasp {
 			$this->settings_row		= $row;
 			$this->settings_name	= $setting_name . '_' . $this->settings_row . '_settings';
 
-			if( false === get_option( $this->index_name ) ) {
-				add_option( $this->index_name, [ $this->settings_row => $this->settings_name ] );
+			if( false === \get_option( $this->index_name ) ) {
+				\add_option( $this->index_name, [ $this->settings_row => $this->settings_name ] );
 			}
 			else {
 				$this->indexes[ $this->settings_row ] = $this->settings_name;
-				update_option( $this->index_name, $this->indexes );
+				\update_option( $this->index_name, $this->indexes );
 			}
 		}
 
 		$this->prepare_get_vars();
 
-		if( false === get_option( $this->settings_name, false ) ) {
-			add_option( $this->settings_name, [] );
+		if( false === \get_option( $this->settings_name, false ) ) {
+			\add_option( $this->settings_name, [] );
 		}
 		else {
-			$this->setting_values = get_option( $this->settings_name );
+			$this->setting_values = \get_option( $this->settings_name );
 		}
 
-		if( get_option( $this->updated_name ) === '1' ) {
+		if( \get_option( $this->updated_name ) === '1' ) {
 			$this->form_updated = true;
-			delete_option( $this->updated_name );
+			\delete_option( $this->updated_name );
 		}
 
 		return $this;
+	}
+	
+	
+	function __call( $method, $args ) {
+		echo 'Medhod name ' . $method . ' does not exists!';
 	}
 
 
@@ -198,8 +204,19 @@ class Wasp {
 	/**
 	* @since 1.2.0
 	*/
-	function wp_form_init( $func_hook ) {
-		add_action( "admin_init", $func_hook );
+	function wp_form_init( $hook ) {
+		
+		if( empty( $hook ) ) return;
+		
+		if( !is_array( $hook ) ) {
+			$mock_obj = new \stdClass();
+			$mock_obj->{ $hook } = call_user_func( $hook, $this );
+			\add_action( 'admin_init', [ $mock_obj, $hook ] );
+			
+			return;
+		}
+		
+		\add_action( "admin_init", $hook );
 	}
 
 
@@ -226,7 +243,7 @@ class Wasp {
 
 	public function route( $link ) {
 
-		if( is_array( $link ) ) $link = add_query_arg( $link );
+		if( is_array( $link ) ) $link = \add_query_arg( $link );
 
 		$this->add_hidden_field( '_wp_http_referer', $link );
 	}
@@ -277,8 +294,8 @@ class Wasp {
 
 		if( !empty( $current[ 'html_before' ] ) ) echo $current[ 'html_before' ];
 
-		echo '<h2 class="title">' . esc_html__( $current[ 'title' ], $this->domain ) . '</h2>';
-		echo '<p class="description">' . esc_html__( $current[ 'desc' ], $this->domain ) . '</p>';
+		echo '<h2 class="title">' . \esc_html__( $current[ 'title' ], $this->domain ) . '</h2>';
+		echo '<p class="description">' . \esc_html__( $current[ 'desc' ], $this->domain ) . '</p>';
 
 		if( !empty( $current[ 'html_after' ] ) ) echo $current[ 'html_after' ];
 	}
@@ -301,10 +318,10 @@ class Wasp {
 			$row		= $row_array[ $name ];
 
 			unset( $indexes[ $row ] );
-			update_option( $this->index_name, $indexes );
+			\update_option( $this->index_name, $indexes );
 		}
 
-		delete_option( $name );
+		\delete_option( $name );
 	}
 
 
@@ -427,7 +444,7 @@ class Wasp {
 	 * add_new_field function renamed as new_field
 	 */
 	public function add_new_field( $type, $id, $label, $options = null, $sanitize = 'text_field' ) {
-		$this->new_field( $type, $id, $label, $options, $sanitize )->add();
+		$this->field( $type, $id, $label, $options, $sanitize )->add();
 	}
 
 
@@ -453,7 +470,7 @@ class Wasp {
 		$this->current_field = [
 			'type'		=> $type,
 			'id'		=> $id,
-			'label'		=> esc_attr__( $label, $this->domain ),
+			'label'		=> \esc_attr__( $label, $this->domain ),
 			'options'	=> $options,
 			'sanitize'	=> $sanitize,
 		];
@@ -469,7 +486,7 @@ class Wasp {
 	public function add() {
 
 		if( !empty( $this->current_section[ 'id' ] ) ) {
-			add_settings_section(
+			\add_settings_section(
 				$this->current_section[ 'id' ] . '_section', // Section ID
 				'',
 				array( $this, 'settings_field_section_callback' ), // Admin page to add section to
@@ -496,7 +513,7 @@ class Wasp {
 			$field_args[ 'options' ] = $args[ 'options' ];
 		}
 
-		add_settings_field(
+		\add_settings_field(
 			$this->settings_name . '_' . $args[ 'id' ],
 			$args[ 'label' ],
 			array( $this, $field_type_callback ),
@@ -573,8 +590,8 @@ class Wasp {
 	 * @param bool $save
 	 */
 	public function add_hidden_field( $id, $value, $save = false ) {
-		$id		= esc_html( $id );
-		$value	= esc_html( $value );
+		$id		= \esc_html( $id );
+		$value	= \esc_attr( $value );
 
 		if( $save ) {
 			$this->register_sanitize( 'text', $id, $value, '' );
@@ -605,11 +622,11 @@ class Wasp {
 		$before	= isset( $this->html_before[ $id ] ) ? $this->html_before[ $id ] : null;
 		$after	= isset( $this->html_after[ $id ] ) ? $this->html_after[ $id ] : null;
 
-		if( !empty( $before ) ) $output .= $before;
+		if( !empty( $before ) ) $output .= \wp_kses_post( $before );
 
 		$output .= $html;
 
-		if( !empty( $after ) ) $output .= $after;
+		if( !empty( $after ) ) $output .= \wp_kses_post( $after );
 
 		$this->html_before[ $id ]	= null;
 		$this->html_after[ $id ]	= null;
@@ -625,7 +642,7 @@ class Wasp {
 		$field_name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
 
 		if( !empty( $value ) ) {
-			$value = esc_html( $value );
+			$value = \esc_attr( $value );
 		}
 
 		echo $this->callback_output( '<input type="text" id="' . $field_id . '" name="' . $field_name . '" value="' . $value . '" placeholder="' . $args[ 'label' ] . '"/>', $args[ 'name' ] );
@@ -639,7 +656,7 @@ class Wasp {
 		$field_name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
 
 		if( !empty( $value ) ) {
-			$value = esc_html( $value );
+			$value = \esc_attr( $value );
 		}
 
 		echo $this->callback_output( '<input type="file" id="' . $field_id . '" name="' . $field_name . '" value="' . $value . '" placeholder="' . $args[ 'label' ] . '"/>', $args[ 'name' ] );
@@ -657,7 +674,7 @@ class Wasp {
 				$value_ = $opt_key;
 
 				if( !empty( $value[ $opt_key ] ) ) {
-					$value_ = esc_attr( $value[ $opt_key ] );
+					$value_ = \esc_attr( $value[ $opt_key ] );
 				}
 
 				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
@@ -682,7 +699,7 @@ class Wasp {
 		$html_inner = '';
 
 		if( !empty( $value ) ) {
-			$value = esc_html( $value );
+			$value = \esc_attr( $value );
 		}
 
 		$set_options = function( $options, $value ) use ( &$set_options ) {
@@ -694,7 +711,7 @@ class Wasp {
 					$return .= '<optgroup label="' . $opt_key . '">' . $set_options( $opt_val, $value ) . '</optgroup>';
 				}
 				else {
-					$return .= '<option value="' . $opt_key . '" ' . selected( $opt_key, $value, false ) . '>' . $opt_val . '</option>';
+					$return .= '<option value="' . $opt_key . '" ' . \selected( $opt_key, $value, false ) . '>' . $opt_val . '</option>';
 				}
 			}
 
@@ -725,14 +742,14 @@ class Wasp {
 				$value_ = '';
 
 				if( !empty( $value[ $opt_key ] ) ) {
-					$value_ = esc_attr( $value[ $opt_key ] );
+					$value_ = \esc_attr( $value[ $opt_key ] );
 				}
 
 				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
 				$name	= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
 
 				$options .= '<span>';
-				$options .= '	<input type="checkbox"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . checked( $opt_key, $value_, false ) . '/>';
+				$options .= '	<input type="checkbox"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . \checked( $opt_key, $value_, false ) . '/>';
 				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
 				$options .= '</span>';
 			}
@@ -748,7 +765,7 @@ class Wasp {
 	public function settings_field_radio_callback( $args ) {
 		$value = $this->get_value( $args[ 'name' ] );
 
-		if( !empty( $value ) ) $value = esc_html( $value );
+		if( !empty( $value ) ) $value = \esc_attr( $value );
 
 		$options = '<fieldset>';
 
@@ -759,7 +776,7 @@ class Wasp {
 				$name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
 
 				$options .= '<span>';
-				$options .= '	<input type="radio"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . checked( $opt_key, $value, false ) . '/>';
+				$options .= '	<input type="radio"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . \checked( $opt_key, $value, false ) . '/>';
 				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
 				$options .= '</span>';
 			}
@@ -788,7 +805,7 @@ class Wasp {
 			if( !isset( $inputs[ $input_key ] ) ){
 
 				if( isset( $_POST[ $input_key ] ) ) {
-					$inputs[ $input_key ] = sanitize_post( $_POST[ $input_key ] );
+					$inputs[ $input_key ] = \sanitize_post( $_POST[ $input_key ] );
 
 					continue;
 				}
@@ -830,17 +847,17 @@ class Wasp {
 					require_once( ABSPATH . 'wp-admin/includes/file.php' );
 				}
 
-				$form_file = wp_handle_upload( $new_handler, array( 'test_form' => false ) );
+				$form_file = \wp_handle_upload( $new_handler, array( 'test_form' => false ) );
 
 				if( isset( $form_file[ 'error' ] ) ) {
 					$this->add_error( "<p>" . $form_file[ 'error' ] . "</p>" );
 					$form_file = null;
 				}
-				elseif( $form_file && wp_match_mime_types( 'text/*', $form_file[ 'type' ] ) ) {
+				elseif( $form_file && \wp_match_mime_types( 'text/*', $form_file[ 'type' ] ) ) {
 					// ...
 				}
 				else {
-					$this->add_error( "<p>" . esc_html__( 'UPLOAD ERROR : Unsupported mime type', $this->domain ) . "</p>" );
+					$this->add_error( "<p>" . \esc_html__( 'UPLOAD ERROR : Unsupported mime type', $this->domain ) . "</p>" );
 					$form_file = null;
 				}
 
@@ -857,7 +874,7 @@ class Wasp {
 		}
 
 		// Mark it as updated ( settiings saved )
-		update_option( $this->updated_name, '1' );
+		\update_option( $this->updated_name, '1' );
 
 		// Merge with prior saved settings
 		$inputs += $this->setting_values;
@@ -883,11 +900,11 @@ class Wasp {
 			$requested_option_page = $_POST[ 'setting_name' ];
 
 			if( in_array( $requested_option_page, $all_settings ) ) {
-				register_setting( $this->page_name, $requested_option_page, array( $this, 'settings_input_middleware' ) );
+				\register_setting( $this->page_name, $requested_option_page, array( $this, 'settings_input_middleware' ) );
 			}
 		}
 		else {
-			register_setting( $this->page_name, $this->settings_name, array( $this, 'settings_input_middleware' ) );
+			\register_setting( $this->page_name, $this->settings_name, array( $this, 'settings_input_middleware' ) );
 		}
 	}
 
@@ -898,7 +915,7 @@ class Wasp {
 	 */
 	public function put_hidden_fields() {
 
-		foreach ( $this->hidden_fields as $name => $value ) {
+		foreach( $this->hidden_fields as $name => $value ) {
 			echo '<input type="hidden" name="' . $name . '" value="' . $value . '"/>';
 		}
 	}
@@ -935,13 +952,16 @@ class Wasp {
 	public function run_section( $section = null ) {
 
 		if( empty( $section ) ) {
-		// Display the settings sections for the page
+			
+			if( !is_array( $this->sections ) ) return;
+			
+			// Display the settings sections for the page
 			foreach( $this->sections as $sec_name => $sec_value ) {
-				do_settings_sections( $sec_name );
+				\do_settings_sections( $sec_name );
 			}
 		}
 		else {
-			do_settings_sections( $section );
+			\do_settings_sections( $section );
 		}
 	}
 
@@ -961,7 +981,7 @@ class Wasp {
 		$this->form();
 
 		// Display necessary hidden fields for settings
-		settings_fields( $this->page_name );
+		\settings_fields( $this->page_name );
 
 		$this->add_hidden_field( 'setting_name', $this->settings_name );
 		$this->put_hidden_fields();
@@ -997,9 +1017,9 @@ class Wasp {
 	 */
 	public function submit( $name, $echo = true ) {
 
-		if( !$echo ) return get_submit_button( $name );
+		if( !$echo ) return \get_submit_button( $name );
 
-		echo submit_button( $name );
+		echo \submit_button( $name );
 	}
 
 
@@ -1023,7 +1043,7 @@ class Wasp {
 
 		if( empty( $this->index_name ) ) return false;
 
-		return get_option( $this->index_name );
+		return \get_option( $this->index_name );
 	}
 
 
