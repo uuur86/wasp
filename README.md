@@ -4,73 +4,91 @@ Settings field framework for wordpress
 # Usages
 
 ```php
-new wp_admin_setting_pages( 'settings_name( string )', 'page_name( string )', 'localization_domain_name( string )' );
+require_once( 'vendor/autoload.php' );
+
+use WaspCreators\Wasp;
+
+$form = new Wasp( 'page_name( string )', 'settings_name( string )', 'localization_domain_name( string )' );
 ```
 
 ## In a function 
 ```php
-$settings = '';
+require_once( 'vendor/autoload.php' );
 
-function admin_settings() {
-    global $settings;
-    $settings = new wp_admin_setting_pages( 'wploginexample_login', 'wploginexample_login_page', 'wploginexample' );
-    // Add new section
-    $settings->add_section( 'wploginexample_first', 'User Login Settings', 'Fill the below gaps about your login informations' );
-    // Add new input text field
-    $settings->add_new_field( 'text_input', 'login_id', 'Your login ID' );
-    // Add new select field
-    $settings->add_new_field( 'select', 'login_select', 'Your login select', array( 'key_value' => 'Label Value' ) );
+use WaspCreators\Wasp;
 
-    // Add another section
-    $settings->add_section( 'wploginexample_tweaks', 'Login Tweak Settings', 'Fill the below gaps..' );
-    // Add new radio
-    $settings->add_new_field( 'radio', 'tweak_radio', 'Tweak Radio Field' );
-    // Add new checkbox 
-    $settings->add_new_field( 'checkbox', 'tweak_checkbox', 'Tweak Checkbox Multi Select Field', [ 'c1' => 'C1', 'c2' => 'C2' ]  );
-    // Save all settings
-    $settings->register();
+$form = new Wasp( 'testplugin', 'testplugin_set', 'domain_name' );
+			
+if( $form->is_ready() ) {
+	$form->wp_form_init( 'config_func' );
+}
+			
+add_action( 'admin_menu', 'admin_menu' );
+
+	
+function config_func( $form ) {
+	$form->section( 'section1_id', 'Section 1 Title', 'Desc for Section 1' )->add();
+	$form->field( 'text_input', 'test_id', 'Test ID' )->add();
+
+	$form->register();
+}
+	
+function admin_menu() {
+	add_menu_page( 'TestPlugin', esc_html__( 'TestPlugin', 'testplugin' ), 'manage_options', 'testplugin', 'admin_page', 'dashicons-forms' );
+}
+	
+function admin_page() {
+	global $form;
+	
+	echo "<p>Embedded form will shown in here!</p>";
+        
+	// Echo form output
+	$form->run();
 }
 
-function admin_menu_example_page() {
-    // Prints html code to screen
-    $settings->run();
-}
-
-
-add_action( 'admin_init', 'admin_settings' );
 ```
 
 ## In a class
 ```php
 
-class wploginexample {
+require_once( 'vendor/autoload.php' );
 
-protected $settings;
+use WaspCreators\Wasp;
 
-    function __construct() {
-        add_action( 'admin_init', array( $this, 'admin_settings' ) );
-    }
 
-    // Register function
-    function admin_settings() {
-        $this->settings = new wp_admin_setting_pages( 'wploginexample_login', 'wploginexample_login_page', 'wploginexample' );
-        $settings->add_section( 'wploginexample_tweaks', 'Login Tweak Settings', 'Fill the below gaps..' );
-        $settings->add_new_field( 'checkbox', 'tweak_checkbox', 'Tweak Checkbox Multi Select Field', [ 'c1' => 'C1', 'c2' => 'C2' ]  );
-        $settings->register();
-    }
-    
-    // Display function
-    function admin_settings_page() {
-        $settings->run();// print out
-    }
+class TestPlugin {
+	public $test;
+	
+	function __construct() {
+		$this->test = new Wasp( 'testplugin', 'testplugin_set', 'domain_name' );
+		
+		if( $this->test->is_ready() ) {
+			$this->test->wp_form_init( [ $this, 'config_func' ] );
+		}
+		
+		add_action( 'admin_menu', [ $this, 'admin_menu' ] );
+	}
+	
+	function config_func() {
+		$this->test->section( 'section1_id', 'Section 1 Title', 'Desc for Section 1' )->add();
+		$this->test->field( 'text_input', 'test_id', 'Test ID' )->add();
+
+		$this->test->register();
+	}
+	
+	function admin_menu() {
+		add_menu_page( 'TestPlugin', esc_html__( 'TestPlugin', 'testplugin' ), 'manage_options', 'testplugin', array( $this, 'admin_page' ), 'dashicons-forms' );
+	}
+	
+	function admin_page() {
+        echo "<p>Embedded form will shown in here!</p>";
+        
+        // Echo form output
+		$this->test->run();
+	}
 }
+
+new TestPlugin();
 
 ```
 
-# Conclusion
-## WARNINGS - Pay your attention here please..
-Please look at these rules
-
-- This library must be registered by admin_init hook!! otherwise wordpress' methods won't be exists.. so, it does not work.
-- Run function will be print on screen, you can use in a menu page callback function
-- Be careful while giving names for these methods. Don't use any special character except a-z0-9_ and maybe - example : wploginexample_login
