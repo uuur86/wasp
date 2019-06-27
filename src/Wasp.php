@@ -119,9 +119,11 @@ class Wasp {
 	public function __construct( $page, $setting_name, $domain, $row = false ) {
 		global $pagenow;
 		
-		//if( !function_exists( '\settings_fields' ) ) return;
-		
-		//if( !function_exists( '\is_admin' ) ) return;
+		$this->page_name		= $page;
+		$this->domain			= $domain;
+		$this->settings_name	= $setting_name . '_settings';
+		$this->index_name		= $setting_name . '_' . 'index';
+		$this->updated_name		= $this->domain . '_form_updated_' . $this->settings_name;
 
 		if( !isset( $page ) || $page === false || empty( $page ) || !\is_admin() ) return;
 		
@@ -141,12 +143,6 @@ class Wasp {
 
 			return false;
 		}
-
-		$this->page_name		= $page;
-		$this->domain			= $domain;
-		$this->settings_name	= $setting_name . '_settings';
-		$this->index_name		= $setting_name . '_' . 'index';
-		$this->updated_name		= $this->domain . '_form_updated_' . $this->settings_name;
 
 		if( $row !== false ) {
 			$row = $this->_get( $row );
