@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.0.2
+ * @version 2.1.0
  */
 
 namespace WaspCreators;
@@ -87,7 +87,7 @@ class Wasp {
 	/**
 	* @since 1.2.0
 	*/
-	protected $updated_name = null;
+	protected $option_names = null;
 
 	/**
 	* @since 1.2.0
@@ -108,7 +108,7 @@ class Wasp {
 	* @since 1.2.0
 	*/
 	protected $errors = [];
-	
+
 	/**
 	* @since 2.0.2
 	*/
@@ -118,15 +118,18 @@ class Wasp {
 
 	public function __construct( $page, $setting_name, $domain, $row = false ) {
 		global $pagenow;
-		
+
 		$this->page_name		= $page;
 		$this->domain			= $domain;
 		$this->settings_name	= $setting_name . '_settings';
-		$this->index_name		= $setting_name . '_' . 'index';
-		$this->updated_name		= $this->domain . '_form_updated_' . $this->settings_name;
+		$this->index_name		= $setting_name . '_index';
+		$this->option_names		= [
+			'updated' 	=> $this->domain . '_form_updated_' . $this->settings_name,
+			'errors'	=> $this->domain . '_form_errors_' . $this->settings_name,
+		];
 
 		if( !isset( $page ) || $page === false || empty( $page ) || !\is_admin() ) return;
-		
+
 		$this->is_ready = true;
 
 		if( $pagenow !== 'options.php' ) {
@@ -182,17 +185,17 @@ class Wasp {
 			$this->setting_values = \get_option( $this->settings_name );
 		}
 
-		if( \get_option( $this->updated_name ) === '1' ) {
+		// Checks whether the form is updated
+		if( !$this->check_errors() && \get_option( $this->option_names[ 'updated' ] ) === '1' ) {
 			$this->form_updated = true;
-			\delete_option( $this->updated_name );
+			\delete_option( $this->option_names[ 'updated' ] );
 		}
 
 		return $this;
 	}
-	
-	
+
+
 	function __call( $method, $args ) {
-	
 		echo 'Medhod name ' . $method . ' does not exists!';
 	}
 
@@ -204,9 +207,9 @@ class Wasp {
 	function is_ready() {
 		return $this->is_ready;
 	}
-	
-	
-	
+
+
+
 	function user_func_hook() {
 		call_user_func( $this->user_func, $this );
 	}
@@ -217,16 +220,16 @@ class Wasp {
 	* @since 1.2.0
 	*/
 	function wp_form_init( $hook ) {
-		
+
 		if( empty( $hook ) ) return;
-		
+
 		if( !is_array( $hook ) ) {
 			$this->user_func = $hook;
 			\add_action( "admin_init", [ $this, 'user_func_hook' ] );
-			
+
 			return;
 		}
-		
+
 		\add_action( "admin_init", $hook );
 	}
 
@@ -279,12 +282,12 @@ class Wasp {
 		$this->section = $name;
 
 		$this->sections[ $this->section ] = [
-			'title' => $title,
-			'desc' => $desc,
+			'title'	=> $title,
+			'desc'	=> $desc,
 		];
 
-		$this->current_section = $this->sections[ $this->section ];
-		$this->current_section[ 'id' ] = $this->section;
+		$this->current_section			= $this->sections[ $this->section ];
+		$this->current_section[ 'id' ]	= $this->section;
 
 		return $this;
 	}
@@ -410,9 +413,10 @@ class Wasp {
 	 * @param string $sanitize [ options, regex, text_field, textarea_field, email, file_name etc.. ]
 	 */
 	function register_sanitize( $type, $id, $options, $sanitize ) {
-		$this->input_fields[] = $id;
+		$this->input_fields[]	= $id;
+		$sanitize_arr			= array( 'name' => $sanitize );
 
-		if( in_array( $type, array( 'radio', 'select' ) ) ) {
+		if( $sanitize === 'options' ) {
 
 			if( is_array( $options ) ) {
 				$opt_arr_val = array_values( $options );
@@ -427,16 +431,20 @@ class Wasp {
 					$options = $new_options;
 				}
 
-				$options = array_keys( $options );
-				$this->sanitize[ $id ] = array( 'type' => 'options', 'values' => $options );
+				$sanitize_arr[ 'values' ]	= array_keys( $options );
 			}
 		}
-		else if( $sanitize == 'regex' ) {
-			$this->sanitize[ $id ] = array( 'type' => $sanitize, 'pattern' => $options );
+		else if( $sanitize === 'file' ) {
+			$sanitize_arr[ 'mimes' ] = $options;
+		}
+		else if( $sanitize === 'regex' ) {
+			$sanitize_arr[ 'pattern' ] = $options;
 		}
 		else {
-			$this->sanitize[ $id ] = array( 'type' => $sanitize, 'value' => $options );
+			$sanitize_arr[ 'value' ] = $options;
 		}
+
+		$this->sanitize[ $id ] = $sanitize_arr;
 	}
 
 
@@ -475,7 +483,16 @@ class Wasp {
 		if( !empty( $this->current_field ) ) $this->add();
 
 		if( $type === 'file_input' ) {
-			$this->has_media = true;
+			$this->has_media	= true;
+			$sanitize			= 'file';
+		}
+
+		if( in_array( $type, [ 'checkbox', 'radio', 'select' ] ) ) {
+			$sanitize = 'options';
+		}
+
+		if( $type === 'multi_text_input' ) {
+			$sanitize = 'multi_input';
 		}
 
 		$this->current_field = [
@@ -520,7 +537,7 @@ class Wasp {
 			'name' => $args[ 'id' ],
 		];
 
-		if( is_array( $args[ 'options' ] ) ) {
+		if( is_array( $args[ 'options' ] ) && !in_array( $args[ 'type' ], [ 'file_input' ] ) ) {
 			$field_args[ 'options' ] = $args[ 'options' ];
 		}
 
@@ -624,7 +641,27 @@ class Wasp {
 	 * @since 1.2.0
 	 */
 	public function callback_output( $html, $id = null ) {
-		$output = '';
+		$default_attr	= [
+			'id'	=> [],
+			'name'	=> [],
+			'href'	=> [],
+			'src'	=> [],
+			'type'	=> [],
+			'class'	=> [],
+			'style'	=> [],
+		];
+		$output			= '';
+		$allowed_tags	= [
+			'input'		=> $default_attr,
+			'select'	=> $default_attr,
+			'option'	=> $default_attr,
+			'radio'		=> $default_attr,
+			'a'			=> $default_attr,
+			'img'		=> $default_attr,
+			'br'		=> $default_attr,
+			'div'		=> $default_attr,
+			'hr'		=> $default_attr,
+		];
 
 		if( !empty( $this->current_field[ 'id' ] ) ) {
 			$id = $this->current_field[ 'id' ];
@@ -633,11 +670,11 @@ class Wasp {
 		$before	= isset( $this->html_before[ $id ] ) ? $this->html_before[ $id ] : null;
 		$after	= isset( $this->html_after[ $id ] ) ? $this->html_after[ $id ] : null;
 
-		if( !empty( $before ) ) $output .= \wp_kses_post( $before );
+		if( !empty( $before ) ) $output .= \wp_kses( $before, $allowed_tags );
 
 		$output .= $html;
 
-		if( !empty( $after ) ) $output .= \wp_kses_post( $after );
+		if( !empty( $after ) ) $output .= \wp_kses( $after, $allowed_tags );
 
 		$this->html_before[ $id ]	= null;
 		$this->html_after[ $id ]	= null;
@@ -662,15 +699,10 @@ class Wasp {
 
 
 	public function settings_field_file_input_callback( $args ) {
-		$value		= $this->get_value( $args[ 'name' ] );
 		$field_id	= $this->settings_name . '_' . $args[ 'name' ] . '_input_text';
 		$field_name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
 
-		if( !empty( $value ) ) {
-			$value = \esc_attr( $value );
-		}
-
-		echo $this->callback_output( '<input type="file" id="' . $field_id . '" name="' . $field_name . '" value="' . $value . '" placeholder="' . $args[ 'label' ] . '"/>', $args[ 'name' ] );
+		echo $this->callback_output( '<input type="file" id="' . $field_id . '" name="' . $field_name . '"/>', $args[ 'name' ] );
 	}
 
 
@@ -682,19 +714,15 @@ class Wasp {
 		if( is_array( $args[ 'options' ] ) ) {
 
 			foreach( $args[ 'options' ] as $opt_key => $opt_val ) {
-				$value_ = $opt_key;
+				$value_		= ( empty( $value[ $opt_key ] ) ) ? $opt_key : \esc_attr( $value[ $opt_key ] );
 
-				if( !empty( $value[ $opt_key ] ) ) {
-					$value_ = \esc_attr( $value[ $opt_key ] );
-				}
+				$id			= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
+				$name		= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
 
-				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
-				$name	= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
-
-				$options .= '<span>';
-				$options .= '	<input type="text"  name="' . $name . '" id="' . $id . '" value="' . $value_ . '" />';
-				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
-				$options .= '</span>';
+				$options	.= '<span>';
+				$options	.= '	<input type="text"  name="' . $name . '" id="' . $id . '" value="' . $value_ . '" />';
+				$options	.= '	<label for="' . $id . '">' . $opt_val . '</label>';
+				$options	.= '</span>';
 			}
 		}
 
@@ -706,12 +734,9 @@ class Wasp {
 
 
 	public function settings_field_select_callback( $args ) {
-		$value	  = $this->get_value( $args[ 'name' ] );
-		$html_inner = '';
-
-		if( !empty( $value ) ) {
-			$value = \esc_attr( $value );
-		}
+		$value		= $this->get_value( $args[ 'name' ] );
+		$value		= ( empty( $value ) ) ? : \esc_attr( $value );
+		$html_inner	= '';
 
 		$set_options = function( $options, $value ) use ( &$set_options ) {
 			$return = '';
@@ -774,11 +799,9 @@ class Wasp {
 
 
 	public function settings_field_radio_callback( $args ) {
-		$value = $this->get_value( $args[ 'name' ] );
-
-		if( !empty( $value ) ) $value = \esc_attr( $value );
-
-		$options = '<fieldset>';
+		$value		= $this->get_value( $args[ 'name' ] );
+		$value		= ( empty( $value ) ) ? : \esc_attr( $value );
+		$options	= '<fieldset>';
 
 		if( is_array( $args[ 'options' ] ) ) {
 
@@ -810,9 +833,8 @@ class Wasp {
 	public function settings_input_middleware( $inputs ) {
 		global $pagenow;
 
-		foreach( $this->sanitize as $input_key => $input_value ) {
-
-			// Set hidden post values
+		foreach( $this->sanitize as $input_key => $prop ) {
+			// Sanitize and set external hidden post values into setting form values
 			if( !isset( $inputs[ $input_key ] ) ){
 
 				if( isset( $_POST[ $input_key ] ) ) {
@@ -822,11 +844,13 @@ class Wasp {
 				}
 			}
 
-			if( !isset( $input_value[ 'type' ] ) ) continue;
+			// No sanitization
+			if( !isset( $prop[ 'name' ] ) ) continue;
 
-			if( $input_value[ 'type' ] == 'regex' && isset( $input_value[ 'pattern' ] ) ) {
+			// Sanitize by regular expression rules - regex
+			if( $prop[ 'name' ] === 'regex' && isset( $prop[ 'pattern' ] ) ) {
 
-				if( preg_match( "#^" . $input_value[ 'pattern' ] . "$#ui", $inputs[ $input_key ], $matched ) ) {
+				if( preg_match( "#^" . $prop[ 'pattern' ] . "$#ui", $inputs[ $input_key ], $matched ) ) {
 					$inputs[ $input_key ] = $matched[ 0 ];
 				}
 				else $inputs[ $input_key ] = '';
@@ -834,17 +858,55 @@ class Wasp {
 				continue;
 			}
 
-			if( $input_value[ 'type' ] == 'options' && is_array( $input_value[ 'values' ] ) ) {
+			// Sanitize options which has predetermined values
+			if( $prop[ 'name' ] === 'options' && is_array( $prop[ 'values' ] ) ) {
+				$opt_val = $inputs[ $input_key ];
 
-				if( !in_array( $inputs[ $input_key ], $input_value[ 'values' ] ) ) {
+				if( is_array( $opt_val ) ) {
+					$opt_val = array_intersect( $prop[ 'values' ], $opt_val );
+
+					if( is_array( $opt_val ) ) {
+						$inputs[ $input_key ] = array_combine( $opt_val, $opt_val );
+					}
+				}
+				elseif( !in_array( $opt_val, $prop[ 'values' ] ) ) {
 					unset( $inputs[ $input_key ] );
 				}
 
 				continue;
 			}
 
-			if( isset( $_FILES[ $this->settings_name ][ 'name' ][ $input_key ] ) ) {
-				$file_handler	= $_FILES[ $this->settings_name ];
+			// Sanitize multi-text input
+			if( $prop[ 'name' ] === 'multi_input' ) {
+				$opt_val 			= $inputs[ $input_key ];
+				$sanitized_inputs	= [];
+
+				foreach( $opt_val as $key => $value ) {
+					$sanitized_inputs[ $key ] = \sanitize_post( $value );
+				}
+
+				$inputs[ $input_key ] = $sanitized_inputs;
+
+				continue;
+			}
+
+			// Sanitize file uploads
+			if( $prop[ 'name' ] === 'file' ) {
+
+				if( isset( $_FILES[ $this->settings_name ] ) ) {
+					$file_handler	= $_FILES[ $this->settings_name ];
+				}
+
+				if( !isset( $file_handler[ 'name' ][ $input_key ] ) || empty( $file_handler[ 'name' ][ $input_key ] ) ) {
+					$inputs[ $input_key ] = null;
+					continue;
+				}
+
+				$mimes = $prop[ 'mimes' ];
+
+				if( empty( $mimes ) ) {
+					$mimes = 'text/*';
+				}
 
 				$new_handler	= [
 					'name'		=> $file_handler[ 'name' ][ $input_key ],
@@ -864,7 +926,7 @@ class Wasp {
 					$this->add_error( "<p>" . $form_file[ 'error' ] . "</p>" );
 					$form_file = null;
 				}
-				elseif( $form_file && \wp_match_mime_types( 'text/*', $form_file[ 'type' ] ) ) {
+				elseif( $form_file && \wp_match_mime_types( $mimes, $form_file[ 'type' ] ) ) {
 					// ...
 				}
 				else {
@@ -877,7 +939,8 @@ class Wasp {
 				continue;
 			}
 
-			$func_name = 'sanitize_' . $input_value;
+			// Other sanitization functions for example sanitize_text_field
+			$func_name = 'sanitize_' . $prop[ 'name' ];
 
 			if( !function_exists( $func_name ) ) continue;
 
@@ -885,7 +948,9 @@ class Wasp {
 		}
 
 		// Mark it as updated ( settiings saved )
-		\update_option( $this->updated_name, '1' );
+		\update_option( $this->option_names[ 'updated' ], '1' );
+
+		$this->save_errors();
 
 		// Merge with prior saved settings
 		$inputs += $this->setting_values;
@@ -896,7 +961,41 @@ class Wasp {
 
 
 	protected function add_error( $error ) {
+
+		if( !is_array( $this->errors ) ) {
+			$this->errors = [];
+		}
+
 		$this->errors[] = $error;
+	}
+
+
+
+	public function check_errors() {
+		$errors = $this->get_errors();
+
+		return ( is_array( $errors ) && count( $errors ) > 0 );
+	}
+
+
+
+	public function get_errors() {
+
+		if( $this->errors !== false && empty( $this->errors ) ) {
+			$this->errors = \get_option( $this->option_names[ 'errors' ] );
+			\delete_option( $this->option_names[ 'errors' ] );
+		}
+
+		return $this->errors;
+	}
+
+
+
+	protected function save_errors() {
+
+		if( !empty( $this->errors ) ) {
+			\update_option( $this->option_names[ 'errors' ], $this->errors );
+		}
 	}
 
 
@@ -937,7 +1036,6 @@ class Wasp {
 	 * This function runs all setting options. Also prints out as html output all of them.
 	 */
 	 public function run( $section = null, $button_text = null ) {
-
  		$this->form_start( $section );
  		$this->run_section( $section );
  		$this->form_end( $section );
@@ -963,9 +1061,9 @@ class Wasp {
 	public function run_section( $section = null ) {
 
 		if( empty( $section ) ) {
-			
+
 			if( !is_array( $this->sections ) ) return;
-			
+
 			// Display the settings sections for the page
 			foreach( $this->sections as $sec_name => $sec_value ) {
 				\do_settings_sections( $sec_name );
