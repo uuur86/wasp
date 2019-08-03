@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.0
+ * @version 2.1.1
  */
 
 namespace WaspCreators;
@@ -944,7 +944,9 @@ class Wasp {
 
 			if( !function_exists( $func_name ) ) continue;
 
-			$inputs[ $input_key ] = call_user_func( $func_name, $inputs[ $input_key ] );
+			if( isset( $inputs[ $input_key ] ) ) {
+				$inputs[ $input_key ] = call_user_func( $func_name, $inputs[ $input_key ] );
+			}
 		}
 
 		// Mark it as updated ( settiings saved )
