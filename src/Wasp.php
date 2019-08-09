@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.1
+ * @version 2.1.2
  */
 
 namespace WaspCreators;
@@ -141,7 +141,7 @@ class Wasp {
 				$this->is_ready = false;
 			}
 		}
-		else if( $_REQUEST[ 'option_page' ] !== $page ) {
+		else if( !isset( $_REQUEST[ 'option_page' ] ) || $_REQUEST[ 'option_page' ] !== $page ) {
 			$this->is_ready = false;
 
 			return false;
@@ -168,10 +168,10 @@ class Wasp {
 			$this->settings_name	= $setting_name . '_' . $this->settings_row . '_settings';
 
 			if( false === \get_option( $this->index_name ) ) {
-				\add_option( $this->index_name, [ $this->settings_row => $this->settings_name ] );
+				\add_option( $this->index_name, [ $this->settings_name => $this->settings_row ] );
 			}
 			else {
-				$this->indexes[ $this->settings_row ] = $this->settings_name;
+				$this->indexes[ $this->settings_name ] = $this->settings_row;
 				\update_option( $this->index_name, $this->indexes );
 			}
 		}
@@ -328,14 +328,15 @@ class Wasp {
 
 		// If setting has multiple rows then delete from settings index record
 		if( ( $indexes = $this->get_indexes() ) !== false ) {
-			$row_array	= array_flip( $indexes );
-			$row		= $row_array[ $name ];
-
+			$row = $indexes[ $name ];
 			unset( $indexes[ $row ] );
+
 			\update_option( $this->index_name, $indexes );
 		}
 
-		\delete_option( $name );
+		if( !empty( \get_option( $name, null ) ) ) {
+			\delete_option( $name );
+		}
 	}
 
 
@@ -973,6 +974,11 @@ class Wasp {
 
 
 
+	/**
+	 *
+	 *
+	 * @return bool
+	 */
 	public function check_errors() {
 		$errors = $this->get_errors();
 
@@ -981,6 +987,11 @@ class Wasp {
 
 
 
+	/**
+	 * Gets saved errors from the wp options
+	 *
+	 * @return array
+	 */
 	public function get_errors() {
 
 		if( $this->errors !== false && empty( $this->errors ) ) {
@@ -993,6 +1004,9 @@ class Wasp {
 
 
 
+	/**
+	 * Saves occured errors to option table
+	 */
 	protected function save_errors() {
 
 		if( !empty( $this->errors ) ) {
@@ -1011,7 +1025,7 @@ class Wasp {
 		if( ( $all_settings = $this->get_indexes() ) !== false && isset( $_POST[ 'setting_name' ] ) ) {
 			$requested_option_page = $_POST[ 'setting_name' ];
 
-			if( in_array( $requested_option_page, $all_settings ) ) {
+			if( array_key_exists( $requested_option_page, $all_settings ) ) {
 				\register_setting( $this->page_name, $requested_option_page, array( $this, 'settings_input_middleware' ) );
 			}
 		}
@@ -1045,6 +1059,9 @@ class Wasp {
 
 
 
+	/**
+	 * Form starter
+	 */
 	public function form() {
 
 		if( $this->has_media ) echo '<form method="post" action="options.php" enctype="multipart/form-data">';
@@ -1150,6 +1167,11 @@ class Wasp {
 
 
 
+	/**
+	 * Gets the index_name if exists therefore return as false
+	 *
+	 * @return string|bool
+	 */
 	public function get_indexes() {
 
 		if( empty( $this->index_name ) ) return false;
@@ -1159,6 +1181,38 @@ class Wasp {
 
 
 
+	/**
+	 * Removes all setting fields from the database
+	 *
+	 * @since 2.1.2
+	 */
+	public function remove_settings() {
+		// If setting has multiple rows then delete from settings index record
+		if( ( $indexes = $this->get_indexes() ) !== false ) {
+
+			foreach( $indexes as $key => $value ) {
+				\delete_option( $value );
+			}
+
+			\delete_option( $this->index_name );
+		}
+
+		foreach( $this->option_names as $key => $value ) {
+			\delete_option( $value );
+		}
+
+		if( \get_option( $this->settings_name ) !== false ) {
+			\delete_option( $this->settings_name );
+		}
+	}
+
+
+
+	/**
+	 * Gets the latest setting row name if exists therefore return as false
+	 *
+	 * @return string|bool
+	 */
 	public function last_index() {
 
 		if( $this->settings_row > -1 ) return $this->settings_row;
