@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.2
+ * @version 2.1.3
  */
 
 namespace WaspCreators;
@@ -124,29 +124,13 @@ class Wasp {
 		$this->settings_name	= $setting_name . '_settings';
 		$this->index_name		= $setting_name . '_index';
 		$this->option_names		= [
-			'updated' 	=> $this->domain . '_form_updated_' . $this->settings_name,
-			'errors'	=> $this->domain . '_form_errors_' . $this->settings_name,
+			'updated' 	=> $this->settings_name . '_form_updated',
+			'errors'	=> $this->settings_name . '_form_errors',
 		];
 
 		if( !isset( $page ) || $page === false || empty( $page ) || !\is_admin() ) return;
 
-		$this->is_ready = true;
-
-		if( $pagenow !== 'options.php' ) {
-
-			if( $pagenow !== 'admin.php' ) {
-				$this->is_ready = false;
-			}
-			elseif( $_REQUEST[ 'page' ] !== $page ) {
-				$this->is_ready = false;
-			}
-		}
-		else if( !isset( $_REQUEST[ 'option_page' ] ) || $_REQUEST[ 'option_page' ] !== $page ) {
-			$this->is_ready = false;
-
-			return false;
-		}
-
+		// for multiple settings field
 		if( $row !== false ) {
 			$row = $this->_get( $row );
 
@@ -176,14 +160,34 @@ class Wasp {
 			}
 		}
 
-		$this->prepare_get_vars();
-
+		// Append setting_values
 		if( false === \get_option( $this->settings_name, false ) ) {
 			\add_option( $this->settings_name, [] );
 		}
 		else {
 			$this->setting_values = \get_option( $this->settings_name );
 		}
+
+		$this->is_ready = true;
+
+		// return false if in wp option backend process
+		if( $pagenow !== 'options.php' ) {
+
+			if( $pagenow !== 'admin.php' ) {
+				$this->is_ready = false;
+			}
+			elseif( $_REQUEST[ 'page' ] !== $page ) {
+				$this->is_ready = false;
+			}
+		}
+		else if( !isset( $_REQUEST[ 'option_page' ] ) || $_REQUEST[ 'option_page' ] !== $page ) {
+			$this->is_ready = false;
+
+			return false;
+		}
+
+		// Prepare the form
+		$this->prepare_get_vars();
 
 		// Checks whether the form is updated
 		if( !$this->check_errors() && \get_option( $this->option_names[ 'updated' ] ) === '1' ) {
@@ -193,6 +197,7 @@ class Wasp {
 
 		return $this;
 	}
+
 
 
 	function __call( $method, $args ) {
