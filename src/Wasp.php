@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.3
+ * @version 2.1.4
  */
 
 namespace WaspCreators;
@@ -116,7 +116,7 @@ class Wasp {
 
 
 
-	public function __construct( $page, $setting_name, $domain, $row = false ) {
+	public function __construct( $page, $setting_name, $domain, $row = null ) {
 		global $pagenow;
 
 		$this->page_name		= $page;
@@ -128,62 +128,81 @@ class Wasp {
 			'errors'	=> $this->settings_name . '_form_errors',
 		];
 
-		if( !isset( $page ) || $page === false || empty( $page ) || !\is_admin() ) return;
+		if( !isset( $page ) || empty( $page ) || !\is_admin() ) return;
 
 		// for multiple settings field
-		if( $row !== false ) {
-			$row = $this->_get( $row );
+		if( !empty( $row ) ) {
+			$row			= $this->_get( $row );
+			$this->indexes	= $this->get_indexes();
 
-			if( ( $this->indexes = $this->get_indexes() ) !== false && is_array( $this->indexes ) ) {
-				$last_index		= array_flip( $this->indexes );
-				$last_index		= end( $last_index );
-				$last_settings	= \get_option( $this->indexes[ $last_index ] );
+			// Find the latest row value
+			if( !empty( $this->indexes ) && is_array( $this->indexes ) ) {
+				$indexes		= $this->indexes;
+				$last_row		= end( $indexes );
+				$indexes		= array_flip( $indexes );
+				$last_settings	= \get_option( $indexes[ $last_row ] );
 
-				if( $last_settings !== false && empty( $row ) ) {
-					$row = intval( $last_index );
+				// If row value hasn`t set by get value
+				if( empty( $row ) ) {
+					$row = intval( $last_row );
 
-					if( is_array( $last_settings ) && count( $last_settings ) > 0 ) $row++;
+					// Increases row value when the latest setting has been setted
+					if( is_array( $last_settings ) && count( $last_settings ) > 0 ) {
+						$row++;
+					}
 				}
 			}
 
+			// Make sure to row value equal to least 1
 			if( $row < 1 ) $row = 1;
 
+			// Append the setting row
 			$this->settings_row		= $row;
+
+			// Append the new multiple settings_name which is affected by row
 			$this->settings_name	= $setting_name . '_' . $this->settings_row . '_settings';
 
+			// Save index data
 			if( false === \get_option( $this->index_name ) ) {
+				// Add index option value for first time
 				\add_option( $this->index_name, [ $this->settings_name => $this->settings_row ] );
 			}
 			else {
+				// Update indexes
 				$this->indexes[ $this->settings_name ] = $this->settings_row;
+
+				// Update index option value
 				\update_option( $this->index_name, $this->indexes );
 			}
 		}
 
 		// Append setting_values
-		if( false === \get_option( $this->settings_name, false ) ) {
+		$settings = \get_option( $this->settings_name );
+
+		if( false === $settings ) {
 			\add_option( $this->settings_name, [] );
 		}
 		else {
-			$this->setting_values = \get_option( $this->settings_name );
+			$this->setting_values = $settings;
 		}
 
 		$this->is_ready = true;
 
-		// return false if in wp option backend process
-		if( $pagenow !== 'options.php' ) {
+		// returns if in wp option backend process
+		if( $pagenow === 'options.php' ) {
 
-			if( $pagenow !== 'admin.php' ) {
+			if( !isset( $_REQUEST[ 'option_page' ] ) || $_REQUEST[ 'option_page' ] !== $page ) {
 				$this->is_ready = false;
 			}
-			elseif( $_REQUEST[ 'page' ] !== $page ) {
-				$this->is_ready = false;
-			}
+
+			return;
 		}
-		else if( !isset( $_REQUEST[ 'option_page' ] ) || $_REQUEST[ 'option_page' ] !== $page ) {
-			$this->is_ready = false;
 
-			return false;
+		if( $pagenow !== 'admin.php' ) {
+			$this->is_ready = false;
+		}
+		elseif( $_REQUEST[ 'page' ] !== $page ) {
+			$this->is_ready = false;
 		}
 
 		// Prepare the form
@@ -194,8 +213,6 @@ class Wasp {
 			$this->form_updated = true;
 			\delete_option( $this->option_names[ 'updated' ] );
 		}
-
-		return $this;
 	}
 
 
@@ -331,11 +348,11 @@ class Wasp {
 
 		if( empty( $name ) ) $name = $this->settings_name;
 
-		// If setting has multiple rows then delete from settings index record
-		if( ( $indexes = $this->get_indexes() ) !== false ) {
-			$row = $indexes[ $name ];
-			unset( $indexes[ $row ] );
+		$indexes = $this->get_indexes();
 
+		// If setting has multiple rows then delete from settings index record
+		if( $indexes !== false ) {
+			unset( $indexes[ $name ] );
 			\update_option( $this->index_name, $indexes );
 		}
 
@@ -1027,7 +1044,9 @@ class Wasp {
 	public function register() {
 		global $_POST;
 
-		if( ( $all_settings = $this->get_indexes() ) !== false && isset( $_POST[ 'setting_name' ] ) ) {
+		$all_settings = $this->get_indexes();
+
+		if( !empty( $all_settings ) && isset( $_POST[ 'setting_name' ] ) ) {
 			$requested_option_page = $_POST[ 'setting_name' ];
 
 			if( array_key_exists( $requested_option_page, $all_settings ) ) {
