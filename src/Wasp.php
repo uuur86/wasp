@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.4
+ * @version 2.1.5
  */
 
 namespace WaspCreators;
@@ -374,7 +374,9 @@ class Wasp {
 	public function get_value( $name ) {
 		$value = $this->get_setting( $name );
 
-		if( !isset( $this->default_values[ $name ] ) ) return $value;
+		if( !isset( $this->default_values[ $name ] ) ) {
+			return $value;
+		}
 
 		if( !empty( $this->default_values[ $name ] ) ) {
 			$value = $this->default_values[ $name ];
@@ -420,7 +422,9 @@ class Wasp {
 	 */
 	public function get_setting( $name ) {
 
-		if( isset( $this->setting_values[ $name ] ) ) return $this->setting_values[ $name ];
+		if( isset( $this->setting_values[ $name ] ) ) {
+			return $this->setting_values[ $name ];
+		}
 
 		return null;
 	}
@@ -610,7 +614,9 @@ class Wasp {
 	 */
 	public function set_html( $before = null, $after = null ) {
 
-		if( empty( $this->current_field ) && empty( $this->current_section ) ) return $this;
+		if( empty( $this->current_field ) && empty( $this->current_section ) ) {
+			return $this;
+		}
 
 		if( !empty( $this->current_section[ 'id' ] ) ) {
 			$this->sections[ $this->current_section[ 'id' ] ][ 'html_before' ]	= $before;
@@ -641,7 +647,7 @@ class Wasp {
 	 * @param bool $save
 	 */
 	public function add_hidden_field( $id, $value, $save = false ) {
-		$id		= \esc_html( $id );
+		$id		= \esc_attr( $id );
 		$value	= \esc_attr( $value );
 
 		if( $save ) {
@@ -709,12 +715,10 @@ class Wasp {
 
 	public function settings_field_text_input_callback( $args ) {
 		$value		= $this->get_value( $args[ 'name' ] );
+		$value		= \esc_attr( $value );
+
 		$field_id	= $this->settings_name . '_' . $args[ 'name' ] . '_input_text';
 		$field_name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
-
-		if( !empty( $value ) ) {
-			$value = \esc_attr( $value );
-		}
 
 		echo $this->callback_output( '<input type="text" id="' . $field_id . '" name="' . $field_name . '" value="' . $value . '" placeholder="' . $args[ 'label' ] . '"/>', $args[ 'name' ] );
 	}
@@ -732,12 +736,13 @@ class Wasp {
 
 	public function settings_field_multi_text_input_callback( $args ) {
 		$value		= $this->get_value( $args[ 'name' ] );
+
 		$options	= '<fieldset>';
 
 		if( is_array( $args[ 'options' ] ) ) {
 
 			foreach( $args[ 'options' ] as $opt_key => $opt_val ) {
-				$value_		= ( empty( $value[ $opt_key ] ) ) ? $opt_key : \esc_attr( $value[ $opt_key ] );
+				$value_		= \esc_attr( $value[ $opt_key ] );
 
 				$id			= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
 				$name		= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
@@ -758,7 +763,8 @@ class Wasp {
 
 	public function settings_field_select_callback( $args ) {
 		$value		= $this->get_value( $args[ 'name' ] );
-		$value		= ( empty( $value ) ) ? : \esc_attr( $value );
+		$value		= \esc_attr( $value );
+
 		$html_inner	= '';
 
 		$set_options = function( $options, $value ) use ( &$set_options ) {
@@ -793,16 +799,13 @@ class Wasp {
 
 	public function settings_field_checkbox_callback( $args ) {
 		$value		= $this->get_value( $args[ 'name' ] );
+
 		$options	= '<fieldset>';
 
 		if( is_array( $args[ 'options' ] ) ) {
 
 			foreach( $args[ 'options' ] as $opt_key => $opt_val ) {
-				$value_ = '';
-
-				if( !empty( $value[ $opt_key ] ) ) {
-					$value_ = \esc_attr( $value[ $opt_key ] );
-				}
+				$value_ = \esc_attr( $value[ $opt_key ] );
 
 				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
 				$name	= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
@@ -823,7 +826,8 @@ class Wasp {
 
 	public function settings_field_radio_callback( $args ) {
 		$value		= $this->get_value( $args[ 'name' ] );
-		$value		= ( empty( $value ) ) ? : \esc_attr( $value );
+		$value		= \esc_attr( $value );
+
 		$options	= '<fieldset>';
 
 		if( is_array( $args[ 'options' ] ) ) {
@@ -876,7 +880,9 @@ class Wasp {
 				if( preg_match( "#^" . $prop[ 'pattern' ] . "$#ui", $inputs[ $input_key ], $matched ) ) {
 					$inputs[ $input_key ] = $matched[ 0 ];
 				}
-				else $inputs[ $input_key ] = '';
+				else {
+					$inputs[ $input_key ] = '';
+				}
 
 				continue;
 			}
@@ -922,6 +928,7 @@ class Wasp {
 
 				if( !isset( $file_handler[ 'name' ][ $input_key ] ) || empty( $file_handler[ 'name' ][ $input_key ] ) ) {
 					$inputs[ $input_key ] = null;
+
 					continue;
 				}
 
@@ -1088,8 +1095,12 @@ class Wasp {
 	 */
 	public function form() {
 
-		if( $this->has_media ) echo '<form method="post" action="options.php" enctype="multipart/form-data">';
-		else echo '<form method="post" action="options.php">';
+		if( $this->has_media ) {
+			echo '<form method="post" action="options.php" enctype="multipart/form-data">';
+		}
+		else {
+			echo '<form method="post" action="options.php">';
+		}
 	}
 
 
@@ -1150,8 +1161,12 @@ class Wasp {
 
 		if( empty( $section ) ) {
 
-			if( is_array( $this->submit_name ) ) $button_text = end( $this->submit_name );
-			else $button_text = $this->submit_name;
+			if( is_array( $this->submit_name ) ) {
+				$button_text = end( $this->submit_name );
+			}
+			else {
+				$button_text = $this->submit_name;
+			}
 		}
 		elseif( isset( $this->submit_name[ $section ] ) ) {
 			$button_text = $this->submit_name[ $section ];
@@ -1183,8 +1198,9 @@ class Wasp {
 
 
 	function set_return_route() {
+		$row_index = $this->last_index();
 
-		if( ( $row_index = $this->last_index() ) !== false ) {
+		if( $row_index !== false ) {
 			$this->route( [ 'edit' => $row_index ] );
 		}
 	}
@@ -1211,8 +1227,10 @@ class Wasp {
 	 * @since 2.1.2
 	 */
 	public function remove_settings() {
+		$indexes = $this->get_indexes();
+
 		// If setting has multiple rows then delete from settings index record
-		if( ( $indexes = $this->get_indexes() ) !== false ) {
+		if( $indexes !== false ) {
 
 			foreach( $indexes as $key => $value ) {
 				\delete_option( $value );
@@ -1239,7 +1257,9 @@ class Wasp {
 	 */
 	public function last_index() {
 
-		if( $this->settings_row > -1 ) return $this->settings_row;
+		if( $this->settings_row > -1 ) {
+			return $this->settings_row;
+		}
 
 		return false;
 	}
