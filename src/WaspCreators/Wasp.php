@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.5
+ * @version 2.1.6
  */
 
 namespace WaspCreators;
@@ -763,7 +763,6 @@ class Wasp {
 
 	public function settings_field_select_callback( $args ) {
 		$value		= $this->get_value( $args[ 'name' ] );
-		$value		= \esc_attr( $value );
 
 		$html_inner	= '';
 
@@ -776,6 +775,8 @@ class Wasp {
 					$return .= '<optgroup label="' . $opt_key . '">' . $set_options( $opt_val, $value ) . '</optgroup>';
 				}
 				else {
+					$value	= \esc_attr( $value );
+
 					$return .= '<option value="' . $opt_key . '" ' . \selected( $opt_key, $value, false ) . '>' . $opt_val . '</option>';
 				}
 			}
@@ -890,7 +891,6 @@ class Wasp {
 			// Sanitize options which has predetermined values
 			if( $prop[ 'name' ] === 'options' && is_array( $prop[ 'values' ] ) ) {
 				$opt_val = $inputs[ $input_key ];
-
 				if( is_array( $opt_val ) ) {
 					$opt_val = array_intersect( $prop[ 'values' ], $opt_val );
 
@@ -898,8 +898,8 @@ class Wasp {
 						$inputs[ $input_key ] = array_combine( $opt_val, $opt_val );
 					}
 				}
-				elseif( !in_array( $opt_val, $prop[ 'values' ] ) ) {
-					unset( $inputs[ $input_key ] );
+				else {
+					$inputs[ $input_key ] = $opt_val;
 				}
 
 				continue;
