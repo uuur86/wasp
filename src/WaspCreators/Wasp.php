@@ -18,10 +18,7 @@ namespace WaspCreators;
 // TODO: Eski versiyon varsa override yap, eğer mevcut olan yeni versiyomsa yüklenmesini engelle
 
 if( class_exists( "\\WaspCreators\\Wasp" ) || !defined( 'ABSPATH' ) ) {
-
-	if( version_compare( \WaspCreators\Wasp::VERSION, '2.2.0', '>=' ) ) {
-		return;
-	}
+	return;
 }
 
 use WaspCreators\Ajax;
@@ -1184,6 +1181,7 @@ class Wasp {
 
 	/**
 	 * The Ajax data loader function
+	 * @since 2.2.0
 	 *
 	 * @param array $args [ string static method hook, mixed parameters... ]
 	 * @param array $args2 [ key_name, value_name ]
@@ -1214,6 +1212,12 @@ class Wasp {
 
 
 
+	/**
+	 * Set template file url
+	 * @since 2.2.0
+	 *
+	 * @param string $path
+	 */
 	public function set_theme( $path ) {
 		Templates::set( $path );
 	}
