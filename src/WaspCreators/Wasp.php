@@ -10,14 +10,27 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.1.6
+ * @version 2.2.0
  */
 
 namespace WaspCreators;
 
-if( class_exists( "\\WaspCreators\\Wasp" ) || !defined( 'ABSPATH' ) ) { return; }
+// TODO: Eski versiyon varsa override yap, eğer mevcut olan yeni versiyomsa yüklenmesini engelle
+
+if( class_exists( "\\WaspCreators\\Wasp" ) || !defined( 'ABSPATH' ) ) {
+
+	if( version_compare( \WaspCreators\Wasp::VERSION, '2.2.0', '>=' ) ) {
+		return;
+	}
+}
+
+use WaspCreators\Ajax;
+use WaspCreators\Fields;
+use WaspCreators\Templates;
+
 
 class Wasp {
+	const VERSION = '2.2.0';
 
 	// String form title
 	protected $title;
@@ -114,11 +127,34 @@ class Wasp {
 	*/
 	protected $user_func = null;
 
+	/**
+	* @since 2.2.0
+	*/
+	protected $ajax_loads = null;
+
+	/**
+	* @since 2.2.0
+	*/
+	protected $ajax = null;
+
+	/**
+	* @since 2.2.0
+	*/
+	protected $html_after = null;
+
+	/**
+	* @since 2.2.0
+	*/
+	protected $html_before = null;
+
 
 
 	public function __construct( $page, $setting_name, $domain, $row = null ) {
 		global $pagenow;
 
+		if( !isset( $page ) || empty( $page ) || !\is_admin() ) return;
+
+		$this->ajax				= new Ajax( $domain );
 		$this->page_name		= $page;
 		$this->domain			= $domain;
 		$this->settings_name	= $setting_name . '_settings';
@@ -127,8 +163,6 @@ class Wasp {
 			'updated' 	=> $this->settings_name . '_form_updated',
 			'errors'	=> $this->settings_name . '_form_errors',
 		];
-
-		if( !isset( $page ) || empty( $page ) || !\is_admin() ) return;
 
 		// for multiple settings field
 		if( !empty( $row ) ) {
@@ -206,7 +240,7 @@ class Wasp {
 		}
 
 		// Prepare the form
-		$this->prepare_get_vars();
+		$this->_prepare_get_vars();
 
 		// Checks whether the form is updated
 		if( !$this->check_errors() && \get_option( $this->option_names[ 'updated' ] ) === '1' ) {
@@ -224,8 +258,8 @@ class Wasp {
 
 
 	/**
-	* @since 1.2.0
-	*/
+	 * @since 1.2.0
+	 */
 	function is_ready() {
 		return $this->is_ready;
 	}
@@ -239,8 +273,11 @@ class Wasp {
 
 
 	/**
-	* @since 1.2.0
-	*/
+	 * Inıts the form actions
+	 * @since 1.2.0
+	 *
+	 * @param string|array
+	 */
 	function wp_form_init( $hook ) {
 
 		if( empty( $hook ) ) return;
@@ -257,7 +294,7 @@ class Wasp {
 
 
 
-	protected function prepare_get_vars() {
+	protected function _prepare_get_vars() {
 
 		foreach( $_GET as $get_key => $get_val ) {
 			$this->add_hidden_field( '__get__' . $get_key, $get_val );
@@ -266,6 +303,13 @@ class Wasp {
 
 
 
+	/**
+	 * for fetching data from post or get form data
+	 *
+	 * @param string $name
+	 *
+	 * @return string|null
+	 */
 	public function _get( $name ) {
 
 		if( isset( $_GET[ $name ] ) ) return $_GET[ $name ];
@@ -277,6 +321,11 @@ class Wasp {
 
 
 
+	/**
+	 * Sets route url to redirect
+	 *
+	 * @param string $link url of the redirect address
+	 */
 	public function route( $link ) {
 
 		if( is_array( $link ) ) $link = \add_query_arg( $link );
@@ -287,9 +336,9 @@ class Wasp {
 
 
 	/**
-	 * @param $name
-	 * @param $title
-	 * @param $desc
+	 * @param string $name
+	 * @param string $title
+	 * @param string $desc
 	 */
 	public function add_section( $name, $title, $desc ) {
 
@@ -317,13 +366,17 @@ class Wasp {
 
 
 	/**
-	 * This function prints out the settings field section html code
+	 * This function prints out the section html code
+	 *
+	 * @param array $args callback paramters
 	 */
 	 public function settings_field_section_callback( $args ) {
 
 		if( !isset( $args[ 'id' ] ) ) return;
 
-		if( ( $sec_pos = strpos( $args[ 'id' ], '_section' ) ) === -1 ) return;
+		$sec_pos = strpos( $args[ 'id' ], '_section' );
+
+		if( $sec_pos === -1 ) return;
 
 		$current = substr( $args[ 'id' ], 0, $sec_pos );
 		$current = $this->sections[ $current ];
@@ -487,7 +540,7 @@ class Wasp {
 	 *
 	 * @since 1.2.0
 	 * DEPRECATED
-	 * add_new_field function renamed as new_field
+	 * add_new_field function renamed as field
 	 */
 	public function add_new_field( $type, $id, $label, $options = null, $sanitize = 'text_field' ) {
 		$this->field( $type, $id, $label, $options, $sanitize )->add();
@@ -496,16 +549,16 @@ class Wasp {
 
 
 	/**
-	* @since 1.2.0
 	* This function adds new field to defined setting options
+	* @since 1.2.0
 	*
 	* @param string $type
-	* @param string $id
+	* @param string $key
 	* @param string $label
 	* @param null|array $options
 	* @param string $sanitize
 	*/
-	public function field( $type, $id, $label, $options = null, $sanitize = 'text_field' ) {
+	public function field( $type, $key, $label, $options = null, $sanitize = 'text_field' ) {
 
 		if( !empty( $this->current_field ) ) $this->add();
 
@@ -522,9 +575,14 @@ class Wasp {
 			$sanitize = 'multi_input';
 		}
 
+		$id		= $this->settings_name . '_' . $key . '_' . $type;
+		$name	= $this->settings_name . '[' . $key . ']';
+
 		$this->current_field = [
+			'key'		=> $key,
 			'type'		=> $type,
 			'id'		=> $id,
+			'name'		=> $name,
 			'label'		=> \esc_attr__( $label, $this->domain ),
 			'options'	=> $options,
 			'sanitize'	=> $sanitize,
@@ -541,11 +599,23 @@ class Wasp {
 	public function add() {
 
 		if( !empty( $this->current_section[ 'id' ] ) ) {
+			$section_id = $this->current_section[ 'id' ];
+
+			if( !empty( $this->html_before ) ) {
+				$this->sections[ $section_id ] = $this->html_before;
+				$this->html_before = null;
+			}
+
+			if( !empty( $this->html_after ) ) {
+				$this->sections[ $section_id ] = $this->html_after;
+				$this->html_after = null;
+			}
+
 			\add_settings_section(
-				$this->current_section[ 'id' ] . '_section', // Section ID
+				$section_id . '_section', // Section ID
 				'',
 				array( $this, 'settings_field_section_callback' ), // Admin page to add section to
-				$this->current_section[ 'id' ] // Page
+				$section_id // Page
 			);
 
 			$this->current_section = null;
@@ -555,23 +625,42 @@ class Wasp {
 
 		$args = $this->current_field;
 
-		$field_type_callback = 'settings_field_' . $args[ 'type' ] . '_callback';
-
-		$this->register_sanitize( $args[ 'type' ], $args[ 'id' ], $args[ 'options' ], $args[ 'sanitize' ] );
+		$this->register_sanitize(
+			$args[ 'type' ],
+			$args[ 'id' ],
+			$args[ 'options' ],
+			$args[ 'sanitize' ]
+		);
 
 		$field_args = [
-			'label' => $args[ 'label' ],
-			'name' => $args[ 'id' ],
+			'type'			=> $args[ 'type' ],
+			'id'			=> $args[ 'id' ],
+			'name'			=> $args[ 'name' ],
+			'value'			=> $this->get_value( $args[ 'key' ] ),
 		];
 
 		if( is_array( $args[ 'options' ] ) && !in_array( $args[ 'type' ], [ 'file_input' ] ) ) {
 			$field_args[ 'options' ] = $args[ 'options' ];
 		}
 
+		if( !empty( $this->html_before ) ) {
+			$field_args[ 'html_before' ] = $this->html_before;
+			$this->html_before = null;
+		}
+
+		if( !empty( $this->html_after ) ) {
+			$field_args[ 'html_after' ] = $this->html_after;
+			$this->html_after = null;
+		}
+
+		if( !empty( $this->ajax_loads[ $args[ 'key' ] ] ) ) {
+			$field_args[ 'options' ] = [ '' ];
+		}
+
 		\add_settings_field(
-			$this->settings_name . '_' . $args[ 'id' ],
+			$this->settings_name . '_' . $args[ 'key' ],
 			$args[ 'label' ],
-			array( $this, $field_type_callback ),
+			'\WaspCreators\Fields::callback',
 			$this->section,
 			$this->section . '_section',
 			$field_args
@@ -586,18 +675,17 @@ class Wasp {
 	 * @since 1.2.0
 	 * This function registers default value for any field
 	 *
-	 * @param string $id
 	 * @param string $value
 	 *
-	 * @return bool
+	 * @return Wasp
 	 */
 	public function default_value( $value ) {
 
-		if( empty( $this->current_field[ 'id' ] ) ) return false;
+		if( empty( $this->current_field[ 'key' ] ) ) return false;
 
-		$id = $this->current_field[ 'id' ];
+		$key = $this->current_field[ 'key' ];
 
-		if( !empty( $value ) ) $this->default_values[ $id ] = $value;
+		if( !empty( $value ) ) $this->default_values[ $key ] = $value;
 
 		return $this;
 	}
@@ -608,9 +696,10 @@ class Wasp {
 	 * @since 1.2.0
 	 * This function registers html code as manual
 	 *
-	 * @param string $id
 	 * @param string $before
 	 * @param string $after
+	 *
+	 * @return Wasp
 	 */
 	public function set_html( $before = null, $after = null ) {
 
@@ -618,19 +707,12 @@ class Wasp {
 			return $this;
 		}
 
-		if( !empty( $this->current_section[ 'id' ] ) ) {
-			$this->sections[ $this->current_section[ 'id' ] ][ 'html_before' ]	= $before;
-			$this->sections[ $this->current_section[ 'id' ] ][ 'html_after' ]	= $after;
-		}
-
-		$id = $this->current_field[ 'id' ];
-
 		if( !empty( $before ) ) {
-			$this->html_before[ $id ] = $before;
+			$this->html_before = $before;
 		}
 
 		if( !empty( $after ) ) {
-			$this->html_after[ $id ] = $after;
+			$this->html_after = $after;
 		}
 
 		return $this;
@@ -642,8 +724,8 @@ class Wasp {
 	 * This function registers hidden field for moving variable data
 	 * to options page without creating an option
 	 *
-	 * @param $id
-	 * @param $value
+	 * @param string $id
+	 * @param string $value
 	 * @param bool $save
 	 */
 	public function add_hidden_field( $id, $value, $save = false ) {
@@ -661,192 +743,6 @@ class Wasp {
 
 	public function form_success() {
 		return $this->form_updated;
-	}
-
-
-
-	/**
-	 *
-	 * @since 1.2.0
-	 */
-	public function callback_output( $html, $id = null ) {
-		$default_attr	= [
-			'id'	=> [],
-			'name'	=> [],
-			'href'	=> [],
-			'src'	=> [],
-			'type'	=> [],
-			'class'	=> [],
-			'style'	=> [],
-		];
-		$output			= '';
-		$allowed_tags	= [
-			'input'		=> $default_attr,
-			'select'	=> $default_attr,
-			'option'	=> $default_attr,
-			'radio'		=> $default_attr,
-			'a'			=> $default_attr,
-			'img'		=> $default_attr,
-			'br'		=> $default_attr,
-			'div'		=> $default_attr,
-			'hr'		=> $default_attr,
-		];
-
-		if( !empty( $this->current_field[ 'id' ] ) ) {
-			$id = $this->current_field[ 'id' ];
-		}
-
-		$before	= isset( $this->html_before[ $id ] ) ? $this->html_before[ $id ] : null;
-		$after	= isset( $this->html_after[ $id ] ) ? $this->html_after[ $id ] : null;
-
-		if( !empty( $before ) ) $output .= \wp_kses( $before, $allowed_tags );
-
-		$output .= $html;
-
-		if( !empty( $after ) ) $output .= \wp_kses( $after, $allowed_tags );
-
-		$this->html_before[ $id ]	= null;
-		$this->html_after[ $id ]	= null;
-
-		return $output;
-	}
-
-
-
-	public function settings_field_text_input_callback( $args ) {
-		$value		= $this->get_value( $args[ 'name' ] );
-		$value		= \esc_attr( $value );
-
-		$field_id	= $this->settings_name . '_' . $args[ 'name' ] . '_input_text';
-		$field_name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
-
-		echo $this->callback_output( '<input type="text" id="' . $field_id . '" name="' . $field_name . '" value="' . $value . '" placeholder="' . $args[ 'label' ] . '"/>', $args[ 'name' ] );
-	}
-
-
-
-	public function settings_field_file_input_callback( $args ) {
-		$field_id	= $this->settings_name . '_' . $args[ 'name' ] . '_input_text';
-		$field_name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
-
-		echo $this->callback_output( '<input type="file" id="' . $field_id . '" name="' . $field_name . '"/>', $args[ 'name' ] );
-	}
-
-
-
-	public function settings_field_multi_text_input_callback( $args ) {
-		$value		= $this->get_value( $args[ 'name' ] );
-
-		$options	= '<fieldset>';
-
-		if( is_array( $args[ 'options' ] ) ) {
-
-			foreach( $args[ 'options' ] as $opt_key => $opt_val ) {
-				$value_		= \esc_attr( $value[ $opt_key ] );
-
-				$id			= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
-				$name		= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
-
-				$options	.= '<span>';
-				$options	.= '	<input type="text"  name="' . $name . '" id="' . $id . '" value="' . $value_ . '" />';
-				$options	.= '	<label for="' . $id . '">' . $opt_val . '</label>';
-				$options	.= '</span>';
-			}
-		}
-
-		$options .= '</fieldset>';
-
-		echo $this->callback_output( $options, $args[ 'name' ] );
-	}
-
-
-
-	public function settings_field_select_callback( $args ) {
-		$value		= $this->get_value( $args[ 'name' ] );
-
-		$html_inner	= '';
-
-		$set_options = function( $options, $value ) use ( &$set_options ) {
-			$return = '';
-
-			foreach( $options as $opt_key => $opt_val ) {
-
-				if( is_array( $opt_val ) ) {
-					$return .= '<optgroup label="' . $opt_key . '">' . $set_options( $opt_val, $value ) . '</optgroup>';
-				}
-				else {
-					$value	= \esc_attr( $value );
-
-					$return .= '<option value="' . $opt_key . '" ' . \selected( $opt_key, $value, false ) . '>' . $opt_val . '</option>';
-				}
-			}
-
-			return $return;
-		};
-
-		if( is_array( $args[ 'options' ] ) ) {
-			$options	= $args[ 'options' ];
-			$html_inner = $set_options( $options, $value );
-		}
-
-		$html	= '<select id="' . $this->settings_name . '_' . $args[ 'name' ] . '_input_text" name="' . $this->settings_name . '[' . $args[ 'name' ] . ']">';
-		$html	.= $html_inner;
-		$html	.= '</select>';
-
-		echo $this->callback_output( $html, $args[ 'name' ] );
-	}
-
-
-
-	public function settings_field_checkbox_callback( $args ) {
-		$value		= $this->get_value( $args[ 'name' ] );
-
-		$options	= '<fieldset>';
-
-		if( is_array( $args[ 'options' ] ) ) {
-
-			foreach( $args[ 'options' ] as $opt_key => $opt_val ) {
-				$value_ = \esc_attr( $value[ $opt_key ] );
-
-				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_checkbox_' . $opt_key;
-				$name	= $this->settings_name . '[' . $args[ 'name' ] . '][' . $opt_key . ']';
-
-				$options .= '<span>';
-				$options .= '	<input type="checkbox"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . \checked( $opt_key, $value_, false ) . '/>';
-				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
-				$options .= '</span>';
-			}
-		}
-
-		$options .= '</fieldset>';
-
-		echo $this->callback_output( $options, $args[ 'name' ] );
-	}
-
-
-
-	public function settings_field_radio_callback( $args ) {
-		$value		= $this->get_value( $args[ 'name' ] );
-		$value		= \esc_attr( $value );
-
-		$options	= '<fieldset>';
-
-		if( is_array( $args[ 'options' ] ) ) {
-
-			foreach( $args[ 'options' ] as $opt_key => $opt_val ) {
-				$id		= $this->settings_name . '_' . $args[ 'name' ] . '_input_radio_' . $opt_key;
-				$name	= $this->settings_name . '[' . $args[ 'name' ] . ']';
-
-				$options .= '<span>';
-				$options .= '	<input type="radio"  name="' . $name . '" id="' . $id . '" value="' . $opt_key . '" ' . \checked( $opt_key, $value, false ) . '/>';
-				$options .= '	<label for="' . $id . '">' . $opt_val . '</label>';
-				$options .= '</span>';
-			}
-		}
-
-		$options .= '</fieldset>';
-
-		echo $this->callback_output( $options, $args[ 'name' ] );
 	}
 
 
@@ -1004,7 +900,7 @@ class Wasp {
 
 
 	/**
-	 *
+	 * Checks form errors
 	 *
 	 * @return bool
 	 */
@@ -1063,6 +959,8 @@ class Wasp {
 		else {
 			\register_setting( $this->page_name, $this->settings_name, array( $this, 'settings_input_middleware' ) );
 		}
+
+		$this->ajax->load_handler( $this->ajax_loads );
 	}
 
 
@@ -1133,6 +1031,8 @@ class Wasp {
 	/**
 	 * Manual way to running form. That prints all html form starter tags and fires all start process.
 	 * @since 1.3.0
+	 *
+	 * @param string $section
 	 */
 	public function form_start( $section = null ) {
 
@@ -1155,6 +1055,8 @@ class Wasp {
 	/**
 	 * Manual way to running form. That prints all html form ender tags and fires all end process.
 	 * @since 1.3.0
+	 *
+	 * @param string $section
 	 */
 	public function form_end( $section = null ) {
 		$button_text = null;
@@ -1180,7 +1082,13 @@ class Wasp {
 
 
 	/**
+	 * Gets submit button html code
 	 * @since 1.2.0
+	 *
+	 * @param string $name
+	 * @param bool $echo
+	 *
+	 * @return string or echo
 	 */
 	public function submit( $name, $echo = true ) {
 
@@ -1191,12 +1099,20 @@ class Wasp {
 
 
 
+	/**
+	* Defines submit button name
+	*
+	* @param string $name
+	*/
 	public function submit_name( $name ) {
 		$this->submit_name[ $this->section ] = $name;
 	}
 
 
 
+	/**
+	 * Sets return url for redirecting
+	 */
 	function set_return_route() {
 		$row_index = $this->last_index();
 
@@ -1262,5 +1178,43 @@ class Wasp {
 		}
 
 		return false;
+	}
+
+
+
+	/**
+	 * The Ajax data loader function
+	 *
+	 * @param array $args [ string static method hook, mixed parameters... ]
+	 * @param array $args2 [ key_name, value_name ]
+	 * @param string $loading_text text message to be displayed while page is loading
+	 *
+	 * @return object $this
+	 */
+	public function ajax_loader( array $args, $loading_text = null ) {
+		$field	= $this->current_field;
+
+		if( empty( $loading_text ) ) {
+			$loading_text = 'Please wait...';
+		}
+
+		$hook	= array_shift( $args );
+
+		$conf[ 'hook' ]		= $hook;
+		$conf[ 'params' ]	= $args;
+		$conf[ 'field' ]	= $field;
+
+		$conf[ 'field' ][ 'loading_text' ] = $loading_text;
+		$conf[ 'field' ][ 'value' ] = $this->get_value( $field[ 'key' ] );
+
+		$this->ajax_loads[ $field[ 'key' ] ] = $conf;
+
+		return $this;
+	}
+
+
+
+	public function set_theme( $path ) {
+		Templates::set( $path );
 	}
 }
