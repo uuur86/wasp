@@ -15,8 +15,6 @@
 
 namespace WaspCreators;
 
-// TODO: Eski versiyon varsa override yap, eğer mevcut olan yeni versiyomsa yüklenmesini engelle
-
 if( class_exists( "\\WaspCreators\\Wasp" ) || !defined( 'ABSPATH' ) ) {
 	return;
 }
