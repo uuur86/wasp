@@ -16,7 +16,7 @@ class Radio extends FieldCreator {
 
 	public $params		= [
 		'options'	=> [
-			'id'		=> 'id',
+			'id'			=> 'id',
 			'name'		=> 'name',
 			'label'		=> 'val',
 			'value'		=> 'key',

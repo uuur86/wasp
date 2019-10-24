@@ -41,5 +41,12 @@ return [
 				<label for="[id]">[label]</label>
 			</span>
 		'
+	],
+	'Onecheckbox' => [
+		'main' => '
+		<span>
+			<input type="checkbox" name="[name]" id="[id]" value="[value]" [checked]/>
+			<label for="[id]">[label]</label>
+		</span>',
 	]
 ];

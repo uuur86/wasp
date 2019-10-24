@@ -27,8 +27,7 @@ class Ajax {
 
 
 	public function load_handler( $loads ) {
-
-		if( empty( $loads ) ) {
+		if ( empty( $loads ) ) {
 			return false;
 		}
 
@@ -48,8 +47,8 @@ class Ajax {
 		$values = array(
 			'ajax_url'		=> \admin_url( 'admin-ajax.php' ),
 			'action_name'	=> 'wasp_ajax_loader_action',
-			'nonce'			=> \wp_create_nonce( 'wasp_ajax_loader_action' ),
-			'fields'		=> $this->loads
+			'nonce'				=> \wp_create_nonce( 'wasp_ajax_loader_action' ),
+			'fields'			=> $this->loads
 		);
 
 		\wp_localize_script( $handle_name, 'ajax_loader_object', $values );
@@ -63,23 +62,23 @@ class Ajax {
 	public function ajax_loader_action() {
 		$has_option_list = [ 'radio', 'select', 'multi_text_input', 'checkbox' ];
 
-		if( \wp_verify_nonce( $_REQUEST[ 'nonce' ], 'wasp_ajax_loader_action' ) ) {
+		if ( \wp_verify_nonce( $_REQUEST[ 'nonce' ], 'wasp_ajax_loader_action' ) ) {
 			$fields = $_REQUEST[ 'fields' ];
 			$result_json = [];
 
-			foreach( $fields as $key => $field ) {
-				$hook			= stripslashes( $field[ 'hook' ] );
-				$hook_exp		= explode( '::', $hook );
+			foreach ( $fields as $key => $field ) {
+				$hook					= stripslashes( $field[ 'hook' ] );
+				$hook_exp			= explode( '::', $hook );
 				$class_name		= $hook_exp[ 0 ];
 				$method_name	= $hook_exp[ 1 ];
-				$params			= isset( $field[ 'params' ] ) ? $field[ 'params' ] : [];
+				$params				= isset( $field[ 'params' ] ) ? $field[ 'params' ] : [];
 				$field_type		= $field[ 'field' ][ 'type' ];
 
-				if( empty( $params ) || !is_array( $params ) ) {
+				if ( empty( $params ) || ! is_array( $params ) ) {
 					$params = [];
 				}
 
-				if( !method_exists( $class_name, $method_name ) ) {
+				if ( ! method_exists( $class_name, $method_name ) ) {
 					echo $hook . ' not found!';
 				}
 
@@ -87,18 +86,14 @@ class Ajax {
 
 				$not_found_text = 'not found!!!!!';
 
-				if( $func_result === false ) {
+				if ( $func_result === false ) {
 					$field[ 'field' ][ 'not_found' ] = $not_found_text;
-				}
-				elseif( $field_type == 'text_input' ) {
+				} elseif ( $field_type == 'text_input' ) {
 					$field[ 'field' ][ 'value' ] = $func_result;
-				}
-				elseif( $field_type == 'textarea' ) {
+				} elseif ( $field_type == 'textarea' ) {
 					$field[ 'field' ][ 'text' ] = $func_result;
-				}
-				elseif( in_array( $field_type, $has_option_list ) ) {
-
-					if( is_array( $func_result ) ) {
+				} elseif ( in_array( $field_type, $has_option_list ) ) {
+					if ( is_array( $func_result ) ) {
 						$field[ 'field' ][ 'options' ] = $func_result;
 					}
 				}
@@ -107,7 +102,6 @@ class Ajax {
 
 				$result_json[ $key ][ 'value' ] = $result;
 			}
-
 
 			echo json_encode( $result_json );
 		}

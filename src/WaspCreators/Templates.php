@@ -15,8 +15,7 @@ class Templates {
 
 
 	public static function set( $path = null ) {
-
-		if( !empty( $path ) ) {
+		if ( ! empty( $path ) ) {
 			self::$path	= $path;
 		}
 
@@ -27,13 +26,12 @@ class Templates {
 
 	public static function get( $type ) {
 
-		if( empty( self::$templates ) ) {
+		if ( empty( self::$templates ) ) {
 			$ds = DIRECTORY_SEPARATOR;
 
-			if( empty( self::$path ) ) {
+			if ( empty( self::$path ) ) {
 				$tempFile = dirname( __FILE__, 3 ) . '/templates/default';
-			}
-			else {
+			} else {
 				$tempFile =  dirname( __FILE__, 5 ) . self::$path;
 			}
 
@@ -41,14 +39,14 @@ class Templates {
 			$tempFile = strtr( $tempFile, [ '/' => $ds, '../' => '' ] );
 			$tempFile .= '.wasp.php';
 
-			if( !file_exists( $tempFile ) ) {
+			if ( ! file_exists( $tempFile ) ) {
 				return false;
 			}
 
 			self::$templates = include $tempFile;
 		}
 
-		if( isset( self::$templates[ $type ] ) ) {
+		if ( isset( self::$templates[ $type ] ) ) {
 			return (object)self::$templates[ $type ];
 		}
 	}
@@ -56,21 +54,22 @@ class Templates {
 
 
 	public static function append( $html, $args ) {
-		$excludes	= [ 'options', 'text', 'checked', 'selected' ];
-
 		preg_match_all( '#\[[a-z0-9_]+\]#siu', $html, $attr );
 
-		$attr		= $attr[ 0 ];
+		$excludes	= [ 'options', 'text', 'checked', 'selected' ];
+		$attr			= $attr[ 0 ];
 		$attr 		= array_combine( $attr, array_fill( 0, count( $attr ), '' ) );
-		$new_args 	= $attr;
+		$new_args = $attr;
 
-		foreach( $args as $key => $val ) {
+		foreach ( $args as $key => $val ) {
 			$keyname = '[' . $key . ']';
 
-			if( !isset( $new_args[ $keyname ] ) ) continue;
+			if ( ! isset( $new_args[ $keyname ] ) ) continue;
 
-			if( !in_array( $key, $excludes ) && !is_array( $val ) ) {
+			if ( ! in_array( $key, $excludes ) && ! is_array( $val ) ) {
 				$val = \esc_attr( $val );
+			} elseif ( $key == 'text' ) {
+				$val = \esc_html( $val );
 			}
 
 			$new_args[ $keyname ] = $val;
