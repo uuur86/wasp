@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.2.0
+ * @version 2.3.1
  */
 
 namespace WaspCreators;
@@ -25,7 +25,7 @@ use WaspCreators\Templates;
 
 
 class Wasp {
-	const VERSION = '2.2.0';
+	const VERSION = '2.3.1';
 
 	/**
 	 * Form title
@@ -236,6 +236,14 @@ class Wasp {
 	*/
 	protected $htmlBefore = null;
 
+	/**
+	* @since 2.2.1
+	* Contains setting rows if multi row settings is enabled
+	*
+	* @var array
+	*/
+	protected $rows = null;
+
 
 
 	/**
@@ -244,10 +252,11 @@ class Wasp {
 	 * @param string $domain Domain for localize
 	 * @param string $row Get variable name for multiple form row
 	 */
-	public function __construct( $page, $setting_name, $domain, $row = null ) {
+	public function __construct( $page, $setting_name, $domain, $row = null )
+	{
 		global $pagenow;
 
-		if ( ! isset( $page ) || empty( $page ) || ! \is_admin() ) return;
+		if ( ! isset( $page ) || empty( $page ) ) return;
 
 		$this->ajax						= new Ajax( $domain );
 		$this->pageName				= $page;
@@ -262,7 +271,7 @@ class Wasp {
 		// for multiple settings field
 		if ( ! empty( $row ) ) {
 			$row = $this->_get( $row );
-			$this->indexes = $this->get_indexes();
+			$this->indexes = $this->_getIndexes();
 
 			// Find the latest row value
 			if ( ! empty( $this->indexes ) && is_array( $this->indexes ) ) {
@@ -347,7 +356,8 @@ class Wasp {
 	/**
 	 * Catches wrong method names
 	 */
-	function __call( $method, $args ) {
+	public function __call( $method, $args )
+	{
 		echo 'Medhod name ' . $method . ' does not exists!';
 	}
 
@@ -356,7 +366,8 @@ class Wasp {
 	/**
 	 * @since 1.2.0
 	 */
-	function is_ready() {
+	public function is_ready()
+	{
 		return $this->isReady;
 	}
 
@@ -365,7 +376,8 @@ class Wasp {
 	/**
 	 * WP Hook
 	 */
-	public function userFuncHook() {
+	public function userFuncHook()
+	{
 		call_user_func( $this->userFunc, $this );
 	}
 
@@ -377,8 +389,8 @@ class Wasp {
 	 *
 	 * @param string|array
 	 */
-	public function wp_form_init( $hook ) {
-
+	public function wp_form_init( $hook )
+	{
 		if ( empty( $hook ) ) return;
 
 		if ( ! is_array( $hook ) ) {
@@ -395,8 +407,8 @@ class Wasp {
 	/**
 	 * Passes all get variables as hidden inputs in form
 	 */
-	protected function _prepareGetVars() {
-
+	protected function _prepareGetVars()
+	{
 		foreach ( $_GET as $get_key => $get_val ) {
 			$this->add_hidden_field( '__get__' . $get_key, $get_val );
 		}
@@ -411,7 +423,8 @@ class Wasp {
 	 *
 	 * @return string|null
 	 */
-	public function _get( $name ) {
+	public function _get( $name )
+	{
 		if ( isset( $_GET[ $name ] ) ) {
 			return $_GET[ $name ];
 		}
@@ -430,7 +443,8 @@ class Wasp {
 	 *
 	 * @param string $link url of the redirect address
 	 */
-	public function route( $link ) {
+	public function route( $link )
+	{
 		if ( is_array( $link ) ) {
 			$link = \add_query_arg( $link );
 		}
@@ -445,7 +459,8 @@ class Wasp {
 	 * @param string $title
 	 * @param string $desc
 	 */
-	public function section( $args ) {
+	public function section( $args )
+	{
 		if ( ! is_array( $args ) ) {
 			return $this;
 		}
@@ -496,7 +511,8 @@ class Wasp {
 	 *
 	 * @param array $args callback paramters
 	 */
-	 public function sectionCallback( $args ) {
+	 public function sectionCallback( $args )
+	 {
 		if ( ! isset( $args[ 'id' ] ) ) return;
 
 		$sec_pos = strpos( $args[ 'id' ], '_section' );
@@ -526,12 +542,13 @@ class Wasp {
 	 *
 	 * @param string $name
 	 */
-	public function delete_setting( $name = null ) {
+	public function delete_setting( $name = null )
+	{
 		if ( empty( $name ) ) {
 			$name = $this->settingsName;
 		}
 
-		$indexes = $this->get_indexes();
+		$indexes = $this->_getIndexes();
 
 		// If setting has multiple rows then delete from settings index record
 		if ( $indexes !== false ) {
@@ -554,7 +571,8 @@ class Wasp {
 	 *
 	 * @return mixed
 	 */
-	public function get_value( $name ) {
+	public function get_value( $name )
+	{
 		$value = $this->get_setting( $name );
 
 		if ( ! isset( $this->defaultValues[ $name ] ) ) {
@@ -576,7 +594,8 @@ class Wasp {
 	 *
 	 * @return string
 	 */
-	public function get_settings_name() {
+	public function get_settings_name()
+	{
 		return $this->settingsName;
 	}
 
@@ -587,7 +606,8 @@ class Wasp {
 	 *
 	 * @return array|null
 	 */
-	public function get_settings() {
+	public function get_settings()
+	{
 		if ( empty( $this->settingValues ) ) return null;
 
 		return $this->settingValues;
@@ -602,7 +622,8 @@ class Wasp {
 	 *
 	 * @return string
 	 */
-	public function get_setting( $name ) {
+	public function get_setting( $name )
+	{
 		if ( isset( $this->settingValues[ $name ] ) ) {
 			return $this->settingValues[ $name ];
 		}
@@ -619,7 +640,8 @@ class Wasp {
 	 * @param array $args
 	 * @return bool
 	 */
-	public function loadForm( $args ) {
+	public function loadForm( $args )
+	{
 		if ( ! is_array( $args ) ) {
 			return false;
 		}
@@ -650,7 +672,8 @@ class Wasp {
 	 * @param array|string $options
 	 * @param string $sanitize [ options, regex, text_field, textarea_field, email, file_name etc.. ]
 	 */
-	protected function _registerSanitize( $type, $id, $options, $sanitize ) {
+	protected function _registerSanitize( $type, $id, $options, $sanitize )
+	{
 		$this->inputFields[] = $id;
 		$sanitize_arr = array( 'name' => $sanitize );
 
@@ -690,7 +713,8 @@ class Wasp {
 	* @param array $args
 	* @return $this
 	*/
-	public function field( $args ) {
+	public function field( $args )
+	{
 		if ( ! is_array( $args ) ) {
 			return $this;
 		}
@@ -785,8 +809,8 @@ class Wasp {
 	/**
 	* @since 1.2.0
 	*/
-	public function add() {
-
+	public function add()
+	{
 		if ( ! empty( $this->currentSection[ 'id' ] ) ) {
 			$section_id = $this->currentSection[ 'id' ];
 
@@ -872,8 +896,8 @@ class Wasp {
 	 *
 	 * @return Wasp
 	 */
-	public function default_value( $value ) {
-
+	public function default_value( $value )
+	{
 		if ( empty( $this->currentField[ 'key' ] ) ) return false;
 
 		$key = $this->currentField[ 'key' ];
@@ -896,8 +920,8 @@ class Wasp {
 	 *
 	 * @return Wasp
 	 */
-	protected function _setHtml( $before = null, $after = null ) {
-
+	protected function _setHtml( $before = null, $after = null )
+	{
 		if ( empty( $this->currentField ) && empty( $this->currentSection ) ) {
 			return $this;
 		}
@@ -923,7 +947,8 @@ class Wasp {
 	 * @param string $value
 	 * @param bool $save
 	 */
-	public function add_hidden_field( $id, $value, $save = false ) {
+	public function add_hidden_field( $id, $value, $save = false )
+	{
 		$id			= \esc_attr( $id );
 		$value	= \esc_attr( $value );
 
@@ -936,7 +961,8 @@ class Wasp {
 
 
 
-	public function form_success() {
+	public function form_success()
+	{
 		return $this->formUpdated;
 	}
 
@@ -949,12 +975,13 @@ class Wasp {
 	 *
 	 * @return mixed
 	 */
-	public function settingsInputMiddleware( $inputs ) {
+	public function settingsInputMiddleware( $inputs )
+	{
 		global $pagenow;
 
 		foreach ( $this->sanitize as $input_key => $prop ) {
 			// Sanitize and set external hidden post values into setting form values
-			if ( ! isset( $inputs[ $input_key ] ) ){
+			if ( ! isset( $inputs[ $input_key ] ) ) {
 				if ( isset( $_POST[ $input_key ] ) ) {
 					$inputs[ $input_key ] = \sanitize_post( $_POST[ $input_key ] );
 
@@ -1018,12 +1045,11 @@ class Wasp {
 
 			// Sanitize file uploads
 			if ( $prop[ 'name' ] === 'file' ) {
-
 				if ( isset( $_FILES[ $this->settingsName ] ) ) {
 					$file_handler	= $_FILES[ $this->settingsName ];
 				}
 
-				if ( !isset( $file_handler[ 'name' ][ $input_key ] ) || empty( $file_handler[ 'name' ][ $input_key ] ) ) {
+				if ( ! isset( $file_handler[ 'name' ][ $input_key ] ) || empty( $file_handler[ 'name' ][ $input_key ] ) ) {
 					$inputs[ $input_key ] = null;
 
 					continue;
@@ -1100,7 +1126,8 @@ class Wasp {
 
 
 
-	protected function add_error( $error ) {
+	protected function add_error( $error )
+	{
 		if ( ! is_array( $this->errors ) ) {
 			$this->errors = [];
 		}
@@ -1115,7 +1142,8 @@ class Wasp {
 	 *
 	 * @return bool
 	 */
-	public function check_errors() {
+	public function check_errors()
+	{
 		$errors = $this->get_errors();
 
 		return ( is_array( $errors ) && count( $errors ) > 0 );
@@ -1128,7 +1156,8 @@ class Wasp {
 	 *
 	 * @return array
 	 */
-	public function get_errors() {
+	public function get_errors()
+	{
 		if ( $this->errors !== false && empty( $this->errors ) ) {
 			$this->errors = \get_option( $this->optionNames[ 'errors' ] );
 			\delete_option( $this->optionNames[ 'errors' ] );
@@ -1142,7 +1171,8 @@ class Wasp {
 	/**
 	 * Saves occured errors to option table
 	 */
-	protected function save_errors() {
+	protected function save_errors()
+	{
 		if ( ! empty( $this->errors ) ) {
 			\update_option( $this->optionNames[ 'errors' ], $this->errors );
 		}
@@ -1153,10 +1183,11 @@ class Wasp {
 	/**
 	 * This function registers setting options
 	 */
-	public function register() {
+	public function register()
+	{
 		global $_POST;
 
-		$all_settings = $this->get_indexes();
+		$all_settings = $this->_getIndexes();
 
 		if ( ! empty( $all_settings ) && isset( $_POST[ 'setting_name' ] ) ) {
 			$requested_option_page = $_POST[ 'setting_name' ];
@@ -1176,8 +1207,8 @@ class Wasp {
 	/**
 	 * This function adds the hidden fields to the setting form
 	 */
-	public function put_hidden_fields() {
-
+	public function put_hidden_fields()
+	{
 		foreach ( $this->hiddenFields as $name => $value ) {
 			echo '<input type="hidden" name="' . $name . '" value="' . $value . '"/>';
 		}
@@ -1188,7 +1219,8 @@ class Wasp {
 	/**
 	 * This function runs all setting options. Also prints out as html output all of them.
 	 */
-	 public function run( $section = null, $button_text = null ) {
+	public function run( $section = null, $button_text = null )
+	{
  		$this->form_start( $section );
  		$this->run_section( $section );
  		$this->form_end( $section );
@@ -1199,8 +1231,8 @@ class Wasp {
 	/**
 	 * Form starter
 	 */
-	public function form() {
-
+	public function form()
+	{
 		if ( $this->hasMedia ) {
 			echo '<form method="post" action="options.php" enctype="multipart/form-data">';
 		} else {
@@ -1217,8 +1249,8 @@ class Wasp {
 	 *
 	 * @since 1.3.0
 	 */
-	public function run_section( $section = null ) {
-
+	public function run_section( $section = null )
+	{
 		if ( empty( $section ) ) {
 			if ( ! is_array( $this->sections ) ) return;
 
@@ -1239,9 +1271,9 @@ class Wasp {
 	 *
 	 * @param string $section
 	 */
-	public function form_start( $section = null ) {
-
-		if( empty( $this->pageName ) || ! isset( $this->sections ) || ! is_array( $this->sections ) ) {
+	public function form_start( $section = null )
+	{
+		if ( empty( $this->pageName ) || ! isset( $this->sections ) || ! is_array( $this->sections ) ) {
 			return false;
 		}
 
@@ -1263,7 +1295,8 @@ class Wasp {
 	 *
 	 * @param string $section
 	 */
-	public function form_end( $section = null ) {
+	public function form_end( $section = null )
+	{
 		$button_text = null;
 
 		if ( empty( $section ) ) {
@@ -1292,7 +1325,8 @@ class Wasp {
 	 *
 	 * @return string or echo
 	 */
-	public function submit( $name, $echo = true ) {
+	public function submit( $name, $echo = true )
+	{
 		if ( ! $echo ) {
 			return \get_submit_button( $name );
 		}
@@ -1307,7 +1341,8 @@ class Wasp {
 	*
 	* @param string $name
 	*/
-	public function submit_name( $name ) {
+	public function submit_name( $name )
+	{
 		$this->submitName[ $this->section ] = $name;
 	}
 
@@ -1316,7 +1351,8 @@ class Wasp {
 	/**
 	 * Sets return url for redirecting
 	 */
-	function set_return_route() {
+	function set_return_route()
+	{
 		$row_index = $this->last_index();
 
 		if ( $row_index !== false ) {
@@ -1326,13 +1362,35 @@ class Wasp {
 
 
 
+	public function getRows()
+	{
+		if ( is_array( $this->rows ) ) {
+			return $this->rows;
+		}
+
+		$indexes	= $this->_getIndexes();
+
+		if ( $indexes && is_array( $indexes ) ) {
+			foreach ( $indexes as $name => $id ) {
+				$this->rows[ $id ] = [
+					'name'		=> $name,
+					'fields'	=> \get_option( $name )
+				];
+			}
+		}
+
+		return $this->rows;
+	}
+
+
+
 	/**
 	 * Gets the indexName if exists therefore return as false
 	 *
 	 * @return string|bool
 	 */
-	public function get_indexes() {
-
+	protected function _getIndexes()
+	{
 		if ( empty( $this->indexName ) ) return false;
 
 		return \get_option( $this->indexName );
@@ -1345,8 +1403,9 @@ class Wasp {
 	 *
 	 * @since 2.1.2
 	 */
-	public function remove_settings() {
-		$indexes = $this->get_indexes();
+	public function remove_settings()
+	{
+		$indexes = $this->_getIndexes();
 
 		// If setting has multiple rows then delete from settings index record
 		if ( $indexes !== false ) {
@@ -1374,7 +1433,8 @@ class Wasp {
 	 *
 	 * @return string|bool
 	 */
-	public function last_index() {
+	public function last_index()
+	{
 		if ( $this->settingsRow > -1 ) {
 			return $this->settingsRow;
 		}
@@ -1394,7 +1454,8 @@ class Wasp {
 	 *
 	 * @return object $this
 	 */
-	protected function _ajaxLoader( array $args, $loading_text = null ) {
+	protected function _ajaxLoader( array $args, $loading_text = null )
+	{
 		$field = $this->currentField;
 
 		if ( empty( $loading_text ) ) {
@@ -1423,7 +1484,8 @@ class Wasp {
 	 *
 	 * @param string $path
 	 */
-	public function set_theme( $path ) {
+	public function set_theme( $path )
+	{
 		Templates::set( $path );
 	}
 }

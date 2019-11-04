@@ -6,15 +6,16 @@
 
 namespace WaspCreators;
 
-class Templates {
-
+class Templates
+{
 	protected static $path = null;
 
 	protected static $templates = null;
 
 
 
-	public static function set( $path = null ) {
+	public static function set( $path = null )
+	{
 		if ( ! empty( $path ) ) {
 			self::$path	= $path;
 		}
@@ -24,8 +25,8 @@ class Templates {
 
 
 
-	public static function get( $type ) {
-
+	public static function get( $type )
+	{
 		if ( empty( self::$templates ) ) {
 			$ds = DIRECTORY_SEPARATOR;
 
@@ -53,10 +54,21 @@ class Templates {
 
 
 
-	public static function append( $html, $args ) {
+	/**
+	 * Appends the parameters to HTML Template
+	 *
+	 * @param string	$html HTML template code of field
+	 * @param array		$args parameters
+	 * @return string|bool
+	 */
+	public static function append( $html, $args )
+	{
+		if ( ! $args || ! is_array( $args ) ) {
+			return null;
+		}
 		preg_match_all( '#\[[a-z0-9_]+\]#siu', $html, $attr );
 
-		$excludes	= [ 'options', 'text', 'checked', 'selected' ];
+		$excludes	= [ 'options', 'text', 'checked', 'selected', 'disabled' ];
 		$attr			= $attr[ 0 ];
 		$attr 		= array_combine( $attr, array_fill( 0, count( $attr ), '' ) );
 		$new_args = $attr;

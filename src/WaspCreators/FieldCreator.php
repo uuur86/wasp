@@ -5,6 +5,11 @@ namespace WaspCreators;
 use WaspCreators\Templates;
 
 abstract class FieldCreator {
+	protected static $template;
+
+	protected static $id;
+
+	protected static $name;
 
 
 
@@ -25,13 +30,17 @@ abstract class FieldCreator {
 
 		if ( empty( $template ) ) return false;
 
+		self::$template = $template;
+		self::$id				= $args[ 'id' ];
+		self::$name			= $args[ 'name' ];
+
 		$main_args	= [
 			'id'		=> $args[ 'id' ],
 			'name'	=> $args[ 'name' ],
 		];
 
 		if ( isset( $args[ 'options' ] ) && $obj->hasOptions && is_array( $args[ 'options' ] ) ) {
-			$options = $obj->options( $template, $args );
+			$options = $obj->options( $args );
 
 			if ( ! empty( $options ) ) {
 				$main_args[ 'options' ] = $options;
@@ -64,6 +73,7 @@ abstract class FieldCreator {
 	}
 
 
+
 	/**
 	 * Prepares the form item's options
 	 *
@@ -72,34 +82,64 @@ abstract class FieldCreator {
 	 *
 	 * @return string HTML code of the requested form item options
 	 */
-	public function options( $template, $args ) {
-		$options = '';
+	public function options( $args ) {
+		$options = $this->_walker( $args[ 'options' ], $args[ 'value' ] );
 
-		$loop_args = [
-			'template'	=> $template,
-			'attr'			=> $this->params,
-			'args'			=> $args
-		];
+		return $options;
+	}
 
-		$loop_options = function( $options, $value ) use ( &$loop_options, $loop_args ) {
-			$return		= '';
-			$template	= $loop_args[ 'template' ];
-			$attr			= $loop_args[ 'attr' ][ 'options' ];
-			$args			= $loop_args[ 'args' ];
 
-			foreach ( $options as $opt_key => $opt_val ) {
+
+	/**
+	 * Walker function for fields which has options
+	 *
+	 * @param array $options
+	 * @param string $value
+	 * @return string
+	 */
+	protected function _walker( $options, $value )
+	{
+		// Check options and template class
+		if ( ! is_object( self::$template ) || ! is_array( $options ) ) {
+			return false;
+		}
+
+		// The variable container which will return
+		$return		= '';
+
+		// Template object
+		$template	= self::$template;
+
+		// Field capabilities
+		$params		= $this->params;
+
+		// Field options capabilities
+		$attr			= $params[ 'options' ];
+
+		foreach ( $options as $opt_key => $opt_attr ) {
+			if ( isset( $opt_attr[ 'value' ] ) ) {
+				$key			= $opt_attr[ 'value' ];
+				$label		= $opt_attr[ 'label' ];
+
+				// Default disabled
+				$disabled	= false;
+
+				if ( isset( $opt_attr[ 'disabled' ] ) ) {
+					$disabled	= $opt_attr[ 'disabled' ];
+				}
+
 				if ( is_array( $value ) ) {
-					$fieldval = isset( $value[ $opt_key ] ) ? $value[ $opt_key ] : null;
+					$fieldval = isset( $value[ $key ] ) ? $value[ $key ] : null;
 				} else {
 					$fieldval = $value;
 				}
-
+				// For standardizing
 				$opt_params = [
-					'id'		=> $args[ 'id' ] . '_' . $opt_key,
-					'name'	=> $args[ 'name' ] . '[' . $opt_key . ']',
-					'key'		=> $opt_key,
-					'val'		=> $opt_val,
-					'fval'	=> $fieldval,
+					'id'		=> self::$id . '_' . $key, // field id
+					'name'	=> self::$name . '[' . $key . ']', // field name
+					'key'		=> $key, // option key
+					'val'		=> $label, // option label
+					'fval'	=> $fieldval, // option selected value
 				];
 
 				$opt_args = [];
@@ -121,34 +161,28 @@ abstract class FieldCreator {
 				}
 
 				if ( isset( $attr[ 'checked' ] ) && $attr[ 'checked' ] ) {
-					$opt_args[ 'checked' ] = \checked( $opt_key, $fieldval, false );
+					$opt_args[ 'checked' ] = \checked( $key, $fieldval, false );
 				}
 
 				if ( isset( $attr[ 'selected' ] ) && $attr[ 'selected' ] ) {
-					$opt_args[ 'selected' ] = \selected( $opt_key, $fieldval, false );
+					$opt_args[ 'selected' ] = \selected( $key, $fieldval, false );
+				}
+
+				if ( $disabled ) {
+					$opt_args[ 'disabled' ] = ' disabled';
 				}
 
 				$return .= Templates::append( $template->option, $opt_args );
-			}
-
-			return $return;
-		};
-
-		foreach ( $args[ 'options' ] as $opt_key => $opt_val ) {
-			if ( $this->hasGroups && is_array( $opt_val ) ) {
+			} elseif ( $this->hasGroups ) {
 				$grp_args	= [
 					'label'		=> $opt_key,
-					'options' => $loop_options( $opt_val, $args[ 'value' ] )
+					'options' => $this->_walker( $opt_attr, $value )
 				];
 
-				$options .= Templates::append( $template->group, $grp_args );
-			} else {
-				$options = $loop_options( $args[ 'options' ], $args[ 'value' ] );
-
-				break;
+				$return .= Templates::append( $template->group, $grp_args );
 			}
 		}
 
-		return $options;
+		return $return;
 	}
 }

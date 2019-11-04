@@ -146,7 +146,17 @@ $conf = [
 			'type'		=> 'select',
 			'name'		=> 'my_options',
 			'label'		=> 'Select One',
-			'options' => [ 'option1' => 'Option 1', 'option2' => 'Option 2' ]
+			'options' => [
+				[
+					'label' => 'Option 1',
+					'value'	=> 'option1',
+				],
+				[
+					'label' 		=> 'Option 2',
+					'value'			=> 'option2',
+					'disabled'	=> true,
+				],
+			]
 		],
 		[
 			'type'		=> 'select',
@@ -155,12 +165,25 @@ $conf = [
 			// Grouped options
 			'options' => [
 				'My Group 1' => [
-					'option11' => 'Option 1-1',
-					'option12' => 'Option 1-2',
+					[
+						'label' 		=> 'Option 1-1',
+						'value'			=> 'option11',
+						'disabled'	=> true,
+					],
+					[
+						'label' => 'Option 1-2',
+						'value'	=> 'option12',
+					],
 				],
 				'My Group 2' => [
-					'option21' => 'Option 2-1',
-					'option22' => 'Option 2-2',
+					[
+						'label' => 'Option 2-1',
+						'value'	=> 'option21',
+					],
+					[
+						'label' => 'Option 2-2',
+						'value'	=> 'option22',
+					],
 				]
 			]
 		],

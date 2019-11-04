@@ -31,7 +31,7 @@ return [
 	'Select' => [
 		'main'		=> '<select id="[id]" name="[name]">[options]</select>',
 		'group'		=> '<optgroup label="[label]">[options]</optgroup>',
-		'option'	=> '<option value="[value]" [selected]>[label]</option>',
+		'option'	=> '<option value="[value]" [selected][disabled]>[label]</option>',
 	],
 	'Checkbox' => [
 		'main'		=> '<fieldset id="[id]">[options]</fieldset>',
