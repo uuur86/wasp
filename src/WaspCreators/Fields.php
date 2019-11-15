@@ -14,10 +14,10 @@ class Fields {
 		$output = '';
 
 		$default_attr	= [
- 			'id'		=> [],
+ 			'id'	=> [],
  			'name'	=> [],
  			'href'	=> [],
- 			'src'		=> [],
+ 			'src'	=> [],
  			'type'	=> [],
  			'class'	=> [],
  			'style'	=> [],
@@ -28,11 +28,11 @@ class Fields {
  			'select'	=> $default_attr,
  			'option'	=> $default_attr,
  			'radio'		=> $default_attr,
- 			'a'				=> $default_attr,
- 			'img'			=> $default_attr,
- 			'br'			=> $default_attr,
- 			'div'			=> $default_attr,
- 			'hr'			=> $default_attr,
+ 			'a'			=> $default_attr,
+ 			'img'		=> $default_attr,
+ 			'br'		=> $default_attr,
+ 			'div'		=> $default_attr,
+ 			'hr'		=> $default_attr,
  		];
 
  		if ( ! empty( $before ) ) {
@@ -58,7 +58,7 @@ class Fields {
 			return $args[ 'not_found' ];
 		}
 
-		$type		= $args[ 'type' ];
+		$type	= $args[ 'type' ];
 		$before	= null;
 		$after	= null;
 
@@ -73,9 +73,9 @@ class Fields {
 		if ( empty( $type ) ) return;
 
 		$type_arr = [
-			'text_input'				=> 'Text',
+			'text_input'		=> 'Text',
 			'multi_text_input'	=> 'Multitext',
-			'file_input'				=> 'File',
+			'file_input'		=> 'File',
 		];
 
 		if ( isset( $type_arr[ $type ] ) ) {

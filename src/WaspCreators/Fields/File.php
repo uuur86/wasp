@@ -10,5 +10,5 @@ use WaspCreators\FieldCreator;
 
 class File extends FieldCreator {
 
-	public $params		= [];
+	public $params = [];
 }

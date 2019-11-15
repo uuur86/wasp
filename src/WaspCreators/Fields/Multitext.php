@@ -15,11 +15,11 @@ class Multitext extends FieldCreator {
 	public $hasGroups	= false;
 
 	public $params		= [
-		'options'	=> [
-			'id'		=> 'id',
-			'name'		=> 'name',
-			'label'		=> 'val',
-			'value'		=> 'fval',
+		'options' => [
+			'id'	=> 'id',
+			'name'	=> 'name',
+			'label'	=> 'val',
+			'value'	=> 'fval',
 		]
 	];
 }

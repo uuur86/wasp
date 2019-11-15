@@ -10,13 +10,13 @@ use WaspCreators\FieldCreator;
 
 class Checkbox extends FieldCreator {
 
-	public $hasOptions = true;
+	public $hasOptions	= true;
 
 	public $hasGroups	= false;
 
 	public $params		= [
 		'options'	=> [
-			'id'			=> 'id',
+			'id'		=> 'id',
 			'name'		=> 'name',
 			'label'		=> 'val',
 			'value'		=> 'key',

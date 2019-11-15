@@ -21,21 +21,21 @@ abstract class FieldCreator {
 	 * @return string HTML code of the requested form item
 	 */
 	public static function get( $args ) {
-		$obj			= new static();
+		$obj		= new static();
 
-		$type			= new \ReflectionClass( get_class( $obj ) );
-		$type			= $type->getShortName();
+		$type		= new \ReflectionClass( get_class( $obj ) );
+		$type		= $type->getShortName();
 
 		$template	= Templates::get( $type );
 
 		if ( empty( $template ) ) return false;
 
 		self::$template = $template;
-		self::$id				= $args[ 'id' ];
-		self::$name			= $args[ 'name' ];
+		self::$id		= $args[ 'id' ];
+		self::$name		= $args[ 'name' ];
 
 		$main_args	= [
-			'id'		=> $args[ 'id' ],
+			'id'	=> $args[ 'id' ],
 			'name'	=> $args[ 'name' ],
 		];
 
@@ -54,7 +54,7 @@ abstract class FieldCreator {
 			];
 
 			if ( isset( $attr[ 'checked' ] ) && isset( $attr[ 'option' ] ) ) {
-				$main_args[ 'value' ]		= $args[ 'option' ];
+				$main_args[ 'value' ]	= $args[ 'option' ];
 				$main_args[ 'checked' ]	= \checked( $args[ 'option' ], $args[ 'value' ], false );
 			}
 
@@ -118,7 +118,7 @@ abstract class FieldCreator {
 
 		foreach ( $options as $opt_key => $opt_attr ) {
 			if ( isset( $opt_attr[ 'value' ] ) ) {
-				$key			= $opt_attr[ 'value' ];
+				$key		= $opt_attr[ 'value' ];
 				$label		= $opt_attr[ 'label' ];
 
 				// Default disabled
@@ -135,10 +135,10 @@ abstract class FieldCreator {
 				}
 				// For standardizing
 				$opt_params = [
-					'id'		=> self::$id . '_' . $key, // field id
+					'id'	=> self::$id . '_' . $key, // field id
 					'name'	=> self::$name . '[' . $key . ']', // field name
-					'key'		=> $key, // option key
-					'val'		=> $label, // option label
+					'key'	=> $key, // option key
+					'val'	=> $label, // option label
 					'fval'	=> $fieldval, // option selected value
 				];
 
@@ -175,7 +175,7 @@ abstract class FieldCreator {
 				$return .= Templates::append( $template->option, $opt_args );
 			} elseif ( $this->hasGroups ) {
 				$grp_args	= [
-					'label'		=> $opt_key,
+					'label'	=> $opt_key,
 					'options' => $this->_walker( $opt_attr, $value )
 				];
 

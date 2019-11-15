@@ -47,8 +47,8 @@ class Ajax {
 		$values = array(
 			'ajax_url'		=> \admin_url( 'admin-ajax.php' ),
 			'action_name'	=> 'wasp_ajax_loader_action',
-			'nonce'				=> \wp_create_nonce( 'wasp_ajax_loader_action' ),
-			'fields'			=> $this->loads
+			'nonce'			=> \wp_create_nonce( 'wasp_ajax_loader_action' ),
+			'fields'		=> $this->loads
 		);
 
 		\wp_localize_script( $handle_name, 'ajax_loader_object', $values );
@@ -67,11 +67,11 @@ class Ajax {
 			$result_json = [];
 
 			foreach ( $fields as $key => $field ) {
-				$hook					= stripslashes( $field[ 'hook' ] );
-				$hook_exp			= explode( '::', $hook );
+				$hook			= stripslashes( $field[ 'hook' ] );
+				$hook_exp		= explode( '::', $hook );
 				$class_name		= $hook_exp[ 0 ];
 				$method_name	= $hook_exp[ 1 ];
-				$params				= isset( $field[ 'params' ] ) ? $field[ 'params' ] : [];
+				$params			= isset( $field[ 'params' ] ) ? $field[ 'params' ] : [];
 				$field_type		= $field[ 'field' ][ 'type' ];
 
 				if ( empty( $params ) || ! is_array( $params ) ) {

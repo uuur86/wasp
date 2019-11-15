@@ -15,7 +15,7 @@ class Select extends FieldCreator {
 	public $hasGroups	= true;
 
 	public $params		= [
-		'options'	=> [
+		'options' => [
 			'label'		=> 'val',
 			'value'		=> 'key',
 			'selected'	=> 'selected',

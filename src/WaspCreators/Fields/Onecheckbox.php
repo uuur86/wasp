@@ -10,7 +10,7 @@ use WaspCreators\FieldCreator;
 
 class Onecheckbox extends FieldCreator {
 
-	public $hasOptions = false;
+	public $hasOptions	= false;
 
 	public $hasGroups	= false;
 

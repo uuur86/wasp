@@ -258,13 +258,13 @@ class Wasp {
 
 		if ( ! isset( $page ) || empty( $page ) ) return;
 
-		$this->ajax						= new Ajax( $domain );
-		$this->pageName				= $page;
-		$this->domain					= $domain;
+		$this->ajax				= new Ajax( $domain );
+		$this->pageName			= $page;
+		$this->domain			= $domain;
 		$this->settingsName		= $setting_name . '_settings';
-		$this->indexName			= $setting_name . '_index';
+		$this->indexName		= $setting_name . '_index';
 		$this->optionNames		= [
-			'updated' => $this->settingsName . '_form_updated',
+			'updated'	=> $this->settingsName . '_form_updated',
 			'errors'	=> $this->settingsName . '_form_errors',
 		];
 
@@ -467,12 +467,12 @@ class Wasp {
 
 		// Defaults
 		$accepted = [
-			'cond'			=> true,
-			'name'			=> null,
-			'title'			=> null,
-			'desc'			=> null,
-			'after'			=> null,
-			'before'		=> null,
+			'cond'		=> true,
+			'name'		=> null,
+			'title'		=> null,
+			'desc'		=> null,
+			'after'		=> null,
+			'before'	=> null,
 		];
 
 		$args = array_intersect_key( $args, $accepted );
@@ -721,19 +721,19 @@ class Wasp {
 
 		// Defaults
 		$accepted = [
-			'cond'			=> true,
-			'type'			=> null,
-			'name'			=> null,
-			'label'			=> null,
-			'value'			=> null,
-			'default'		=> null,
-			'option'		=> null,
-			'options'		=> null,
-			'after'			=> null,
-			'before'		=> null,
-			'ajax'			=> null,
+			'cond'		=> true,
+			'type'		=> null,
+			'name'		=> null,
+			'label'		=> null,
+			'value'		=> null,
+			'default'	=> null,
+			'option'	=> null,
+			'options'	=> null,
+			'after'		=> null,
+			'before'	=> null,
+			'ajax'		=> null,
 			'sanitize'	=> 'text_field',
-			'save'			=> null,
+			'save'		=> null,
 		];
 
 		$args = array_intersect_key( $args, $accepted );
@@ -775,17 +775,17 @@ class Wasp {
 			$sanitize = 'multi_input';
 		}
 
-		$item_id		= $this->settingsName . '_' . $name . '_' . $type;
+		$item_id	= $this->settingsName . '_' . $name . '_' . $type;
 		$item_name	= $this->settingsName . '[' . $name . ']';
 
 		$this->currentField = [
-			'key'				=> $name,
-			'type'			=> $type,
-			'id'				=> $item_id,
-			'name'			=> $item_name,
-			'label'			=> \esc_attr__( $label, $this->domain ),
-			'option'		=> $option,
-			'options'		=> $options,
+			'key'		=> $name,
+			'type'		=> $type,
+			'id'		=> $item_id,
+			'name'		=> $item_name,
+			'label'		=> \esc_attr__( $label, $this->domain ),
+			'option'	=> $option,
+			'options'	=> $options,
 			'sanitize'	=> $sanitize,
 		];
 
@@ -847,7 +847,7 @@ class Wasp {
 
 		$field_args = [
 			'type'		=> $args[ 'type' ],
-			'id'			=> $args[ 'id' ],
+			'id'		=> $args[ 'id' ],
 			'name'		=> $args[ 'name' ],
 			'value'		=> $this->get_value( $args[ 'key' ] ),
 		];
@@ -949,7 +949,7 @@ class Wasp {
 	 */
 	public function add_hidden_field( $id, $value, $save = false )
 	{
-		$id			= \esc_attr( $id );
+		$id		= \esc_attr( $id );
 		$value	= \esc_attr( $value );
 
 		if ( $save ) {
@@ -1159,8 +1159,11 @@ class Wasp {
 	public function get_errors()
 	{
 		if ( $this->errors !== false && empty( $this->errors ) ) {
-			$this->errors = \get_option( $this->optionNames[ 'errors' ] );
-			\delete_option( $this->optionNames[ 'errors' ] );
+			$this->errors = \get_option( $this->optionNames[ 'errors' ], null );
+
+			if ( ! empty( $this->errors ) ) {
+				\delete_option( $this->optionNames[ 'errors' ] );
+			}
 		}
 
 		return $this->errors;
