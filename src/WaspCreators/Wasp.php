@@ -758,8 +758,8 @@ class Wasp {
 			$this->add();
 		}
 
-		if ( $sanitize === 'regex' || ! empty( $ajax ) ) {
-			// Skip
+		if ( ! empty( $ajax ) ) {
+			$sanitize = $type === 'regex' ? 'regex' : '';
 		} elseif ( $type === 'file_input' ) {
 			$this->hasMedia = true;
 			$sanitize = 'file';
