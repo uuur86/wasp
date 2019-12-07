@@ -5,6 +5,8 @@ namespace WaspCreators;
 use WaspCreators\Templates;
 
 abstract class FieldCreator {
+	protected static $type;
+
 	protected static $template;
 
 	protected static $id;
@@ -30,6 +32,7 @@ abstract class FieldCreator {
 
 		if ( empty( $template ) ) return false;
 
+		self::$type		= $type;
 		self::$template = $template;
 		self::$id		= $args[ 'id' ];
 		self::$name		= $args[ 'name' ];
@@ -114,7 +117,7 @@ abstract class FieldCreator {
 		$params		= $this->params;
 
 		// Field options capabilities
-		$attr			= $params[ 'options' ];
+		$attr		= $params[ 'options' ];
 
 		foreach ( $options as $opt_key => $opt_attr ) {
 			if ( isset( $opt_attr[ 'value' ] ) ) {
@@ -133,10 +136,19 @@ abstract class FieldCreator {
 				} else {
 					$fieldval = $value;
 				}
+
+				$type = self::$type;
+
+				if ( $type == 'Radio' ) {
+					$opt_name = self::$name;
+				} else {
+					$opt_name = self::$name . '[' . $key . ']';
+				}
+
 				// For standardizing
 				$opt_params = [
 					'id'	=> self::$id . '_' . $key, // field id
-					'name'	=> self::$name . '[' . $key . ']', // field name
+					'name'	=> $opt_name, // field name
 					'key'	=> $key, // option key
 					'val'	=> $label, // option label
 					'fval'	=> $fieldval, // option selected value

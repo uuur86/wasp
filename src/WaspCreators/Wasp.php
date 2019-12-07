@@ -758,20 +758,16 @@ class Wasp {
 			$this->add();
 		}
 
-		if ( $type === 'file_input' ) {
+		if ( $sanitize === 'regex' || ! empty( $ajax ) ) {
+			// Skip
+		} elseif ( $type === 'file_input' ) {
 			$this->hasMedia = true;
 			$sanitize = 'file';
-		}
-
-		if ( in_array( $type, [ 'radio', 'select' ] ) ) {
+		} elseif ( in_array( $type, [ 'radio', 'select' ] ) ) {
 			$sanitize = 'options';
-		}
-
-		if ( in_array( $type, [ 'checkbox', 'onecheckbox' ] ) ) {
+		} elseif ( in_array( $type, [ 'checkbox', 'onecheckbox' ] ) ) {
 			$sanitize = 'checkbox';
-		}
-
-		if ( $type === 'multi_text_input' ) {
+		} elseif ( $type === 'multi_text_input' ) {
 			$sanitize = 'multi_input';
 		}
 
