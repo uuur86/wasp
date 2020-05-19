@@ -138,11 +138,10 @@ abstract class FieldCreator {
 				}
 
 				$type = self::$type;
+				$opt_name = self::$name;
 
-				if ( $type == 'Radio' ) {
-					$opt_name = self::$name;
-				} else {
-					$opt_name = self::$name . '[' . $key . ']';
+				if ( $this->hasMultipleChoices ) {
+					$opt_name .= '[' . $key . ']';
 				}
 
 				// For standardizing

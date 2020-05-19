@@ -10,7 +10,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 2.3.1
+ * @version 2.3.2
  */
 
 namespace WaspCreators;
@@ -25,7 +25,7 @@ use WaspCreators\Templates;
 
 
 class Wasp {
-	const VERSION = '2.3.1';
+	const VERSION = '2.3.2';
 
 	/**
 	 * Form title

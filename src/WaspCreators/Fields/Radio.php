@@ -10,6 +10,8 @@ use WaspCreators\FieldCreator;
 
 class Radio extends FieldCreator {
 
+	public $hasMultipleChoices = false;
+
 	public $hasOptions	= true;
 
 	public $hasGroups	= false;

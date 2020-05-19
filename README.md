@@ -139,7 +139,9 @@ $conf = [
 			'cond'		=> ( ! $isHidden ), // Appears when true, otherwise disappeared
 			'type'		=> 'text_input',
 			'name'		=> 'my_text',
-			'label'		=> 'My Text'
+			'label'		=> 'My Text',
+			'after'		=> 'html code which displayed after input',
+			'before'	=> 'html code which displayed before input',
 		],
 		[
 			'cond'		=> ( ! $isHidden ), // Applies to all item types
@@ -155,6 +157,22 @@ $conf = [
 					'label' 		=> 'Option 2',
 					'value'			=> 'option2',
 					'disabled'	=> true,
+				],
+			]
+		],
+		[
+			'cond'		=> ( ! $isHidden ), // Applies to all item types
+			'type'		=> 'radio',
+			'name'		=> 'my_radio',
+			'label'		=> 'Choose one',
+			'options' => [
+				[
+					'label' => 'Switch Off',
+					'value'	=> '0',
+				],
+				[
+					'label' => 'Switch On',
+					'value'	=> '1',
 				],
 			]
 		],
