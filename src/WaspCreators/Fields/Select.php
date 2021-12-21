@@ -8,17 +8,17 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
-class Select extends FieldCreator {
+class Select extends FieldCreator
+{
+  public $hasOptions	= true;
 
-	public $hasOptions	= true;
+  public $hasGroups	= true;
 
-	public $hasGroups	= true;
-
-	public $params		= [
-		'options' => [
-			'label'		=> 'val',
-			'value'		=> 'key',
-			'selected'	=> 'selected',
-		]
-	];
+  public $params		= [
+    'options' => [
+      'label'		=> 'val',
+      'value'		=> 'key',
+      'selected'	=> 'selected',
+    ]
+  ];
 }
