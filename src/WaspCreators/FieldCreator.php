@@ -30,7 +30,7 @@ abstract class FieldCreator
     $type = new \ReflectionClass(get_class($obj));
     $type = $type->getShortName();
 
-    $template	= Templates::get($type);
+    $template = Templates::get($type);
 
     if (empty($template)) return false;
 
@@ -59,8 +59,8 @@ abstract class FieldCreator
       ];
 
       if (isset($attr['checked']) && isset($attr['option'])) {
-        $main_args['value']	= $args['option'];
-        $main_args['checked']	= \checked($args['option'], $args['value'], false);
+        $main_args['value'] = $args['option'];
+        $main_args['checked'] = \checked($args['option'], $args['value'], false);
       }
 
       if (isset($attr['text']) && !empty($attr['text'])) {
@@ -128,10 +128,10 @@ abstract class FieldCreator
         $label = $opt_attr['label'];
 
         // Default disabled
-        $disabled	= false;
+        $disabled = false;
 
         if (isset($opt_attr['disabled'])) {
-          $disabled	= $opt_attr['disabled'];
+          $disabled = $opt_attr['disabled'];
         }
 
         if (is_array($value)) {
@@ -188,7 +188,7 @@ abstract class FieldCreator
 
         $return .= Templates::append($template->option, $opt_args);
       } elseif ($this->hasGroups) {
-        $grp_args	= [
+        $grp_args = [
           'label'   => $opt_key,
           'options' => $this->_walker($opt_attr, $value)
         ];

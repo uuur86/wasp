@@ -10,16 +10,16 @@ use WaspCreators\FieldCreator;
 
 class Multitext extends FieldCreator
 {
-  public $hasOptions	= true;
+  public $hasOptions = true;
 
-  public $hasGroups	= false;
+  public $hasGroups  = false;
 
-  public $params		= [
+  public $params     = [
     'options' => [
-      'id'	=> 'id',
-      'name'	=> 'name',
-      'label'	=> 'val',
-      'value'	=> 'fval',
+      'id'    => 'id',
+      'name'  => 'name',
+      'label' => 'val',
+      'value' => 'fval',
     ]
   ];
 }

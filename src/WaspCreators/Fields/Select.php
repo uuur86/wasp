@@ -10,15 +10,15 @@ use WaspCreators\FieldCreator;
 
 class Select extends FieldCreator
 {
-  public $hasOptions	= true;
+  public $hasOptions = true;
 
-  public $hasGroups	= true;
+  public $hasGroups  = true;
 
-  public $params		= [
+  public $params     = [
     'options' => [
-      'label'		=> 'val',
-      'value'		=> 'key',
-      'selected'	=> 'selected',
+      'label'    => 'val',
+      'value'    => 'key',
+      'selected' => 'selected',
     ]
   ];
 }

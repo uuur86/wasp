@@ -20,8 +20,8 @@ class Ajax
 
   public function __construct($domain)
   {
-    $this->domain	= $domain;
-    $hook_name		= 'wp_ajax_wasp_' . self::action_name;
+    $this->domain = $domain;
+    $hook_name    = 'wp_ajax_wasp_' . self::action_name;
 
     \add_action($hook_name, [$this, 'ajax_loader_action']);
   }
@@ -50,7 +50,7 @@ class Ajax
     // Localize the script with new data
     $values = array(
       'ajax_url'    => \admin_url('admin-ajax.php'),
-      'action_name'	=> 'wasp_ajax_loader_action',
+      'action_name' => 'wasp_ajax_loader_action',
       'nonce'       => \wp_create_nonce('wasp_ajax_loader_action'),
       'fields'      => $this->loads
     );
@@ -74,10 +74,10 @@ class Ajax
       foreach ($fields as $key => $field) {
         $hook         = stripslashes($field['hook']);
         $hook_exp     = explode('::', $hook);
-        $class_name		= $hook_exp[0];
-        $method_name	= $hook_exp[1];
+        $class_name   = $hook_exp[0];
+        $method_name  = $hook_exp[1];
         $params       = isset($field['params']) ? $field['params'] : [];
-        $field_type		= $field['field']['type'];
+        $field_type   = $field['field']['type'];
 
         if (empty($params) || !is_array($params)) {
           $params = [];

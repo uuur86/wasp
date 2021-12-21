@@ -17,7 +17,7 @@ class Templates
   public static function set($path = null)
   {
     if (!empty($path)) {
-      self::$path	= $path;
+      self::$path = $path;
     }
 
     return false;
@@ -57,8 +57,8 @@ class Templates
   /**
    * Appends the parameters to HTML Template
    *
-   * @param string	$html HTML template code of field
-   * @param array		$args parameters
+   * @param string $html HTML template code of field
+   * @param array  $args parameters
    * @return string|bool
    */
   public static function append($html, $args)

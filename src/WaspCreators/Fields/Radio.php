@@ -12,17 +12,17 @@ class Radio extends FieldCreator
 {
   public $hasMultipleChoices = false;
 
-  public $hasOptions	= true;
+  public $hasOptions = true;
 
-  public $hasGroups	= false;
+  public $hasGroups  = false;
 
-  public $params		= [
+  public $params     = [
     'options' => [
-      'id'		=> 'id',
-      'name'		=> 'name',
-      'label'		=> 'val',
-      'value'		=> 'key',
-      'checked'	=> 'checked',
+      'id'      => 'id',
+      'name'    => 'name',
+      'label'   => 'val',
+      'value'   => 'key',
+      'checked' => 'checked',
     ]
   ];
 }
