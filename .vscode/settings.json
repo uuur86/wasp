@@ -1,0 +1,26 @@
+{
+    "editor.insertSpaces": false,
+    "editor.detectIndentation": false,
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "[php]": {
+        "editor.defaultFormatter": "valeryanm.vscode-phpsab",
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4
+    },
+    "[javascript]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4
+    },
+    "[css]": {
+        "editor.insertSpaces": false,
+        "editor.tabSize": 4
+    },
+    "phpsab.standard": "phpcs.xml",
+    "phpsab.snifferMode": "onSave",
+    "phpsab.autoRulesetSearch": false,
+    "php.format.rules.indentBraces": false,
+    "intelephense.format.enable": false,
+    "php.version": "7.1",
+    "intelephense.environment.phpVersion": "7.1.0"
+}

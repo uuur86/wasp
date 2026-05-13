@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<ruleset name="WaspProject">
+	<description>WordPress Coding Standards for Wasp Project.</description>
+
+	<!-- Whenever possible, cache the results -->
+	<arg name="cache"/>
+
+	<!-- Show sniff codes in all reports -->
+	<arg value="s"/>
+
+	<!-- Only scan PHP files -->
+	<arg name="extensions" value="php"/>
+
+	<!-- Strip the filepaths down to the relevant bit -->
+	<arg name="basepath" value="./"/>
+
+	<!-- Check up to 8 files simultaneously -->
+	<arg name="parallel" value="8"/>
+
+	<!-- Ignore the vendor directory -->
+	<exclude-pattern>vendor/*</exclude-pattern>
+	<exclude-pattern>node_modules/*</exclude-pattern>
+
+	<!-- Include the WordPress ruleset, with exclusions for strict checks if desired -->
+	<rule ref="WordPress">
+		<!-- Allow short array syntax [] instead of array() -->
+		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+		<!-- Allow PSR-4 Class file naming instead of class-*.php -->
+		<exclude name="WordPress.Files.FileName"/>
+		<!-- Disable strict equals sign and array arrow alignment forcing -->
+		<exclude name="Generic.Formatting.MultipleStatementAlignment"/>
+		<exclude name="WordPress.Arrays.MultipleStatementAlignment"/>
+		<!-- (Optional) Disable Yoda condition requirement -->
+		<exclude name="WordPress.PHP.YodaConditions"/>
+	</rule>
+
+	<!-- Check files in the current directory and below -->
+	<file>.</file>
+
+	<!-- Set minimum supported PHP version to 7.0 to match composer.json -->
+	<config name="testVersion" value="7.0-"/>
+
+	<!-- Additional WordPress specific settings -->
+	<config name="minimum_supported_wp_version" value="6.0"/>
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="wasp"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="wasp"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

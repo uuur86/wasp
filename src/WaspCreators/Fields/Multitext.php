@@ -8,18 +8,18 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
-class Multitext extends FieldCreator
-{
-  public $hasOptions = true;
+class Multitext extends FieldCreator {
 
-  public $hasGroups  = false;
+	public $has_options	= true;
 
-  public $params     = [
-    'options' => [
-      'id'    => 'id',
-      'name'  => 'name',
-      'label' => 'val',
-      'value' => 'fval',
-    ]
-  ];
+	public $has_groups	= false;
+
+	public $params		= [
+		'options' => [
+			'id'	=> 'id',
+			'name'	=> 'name',
+			'label'	=> 'val',
+			'value'	=> 'fval',
+		]
+	];
 }

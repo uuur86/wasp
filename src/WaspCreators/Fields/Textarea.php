@@ -8,14 +8,14 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
-class Textarea extends FieldCreator
-{
-  public $hasOptions = false;
+class Textarea extends FieldCreator {
 
-  public $hasGroups  = false;
+	public $has_options	= false;
 
-  public $params     = [
-    'text'   => 'value',
-    'holder' => 'label'
-  ];
+	public $has_groups	= false;
+
+	public $params		= [
+		'text'		=> 'value',
+		'holder'	=> 'label'
+	];
 }

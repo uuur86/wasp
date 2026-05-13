@@ -1,0 +1,46 @@
+/**
+ * Wasp Reset Styles
+ *
+ * @package wasp
+ * @since 2.3.3
+ */
+
+.wasp-reset-wrapper {
+	display: inline-block;
+	margin-left: 5px;
+	vertical-align: middle;
+}
+
+.wasp-reset-btn {
+	vertical-align: middle;
+}
+
+.wasp-reset-btn:disabled {
+	opacity: 0.7;
+	cursor: not-allowed;
+}
+
+.wasp-reset-wrapper .spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	margin-left: 5px;
+	vertical-align: middle;
+}
+
+.wasp-reset-wrapper .spinner::before {
+	content: '';
+	display: block;
+	width: 100%;
+	height: 100%;
+	border: 2px solid #f0f0f0;
+	border-top-color: #007cba;
+	border-radius: 50%;
+	animation: wasp-reset-spin 0.8s linear infinite;
+}
+
+@keyframes wasp-reset-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}

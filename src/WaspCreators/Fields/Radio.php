@@ -8,21 +8,21 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
-class Radio extends FieldCreator
-{
-  public $hasMultipleChoices = false;
+class Radio extends FieldCreator {
 
-  public $hasOptions = true;
+	public $has_multiple_choices = false;
 
-  public $hasGroups  = false;
+	public $has_options	= true;
 
-  public $params     = [
-    'options' => [
-      'id'      => 'id',
-      'name'    => 'name',
-      'label'   => 'val',
-      'value'   => 'key',
-      'checked' => 'checked',
-    ]
-  ];
+	public $has_groups	= false;
+
+	public $params		= [
+		'options' => [
+			'id'		=> 'id',
+			'name'		=> 'name',
+			'label'		=> 'val',
+			'value'		=> 'key',
+			'checked'	=> 'checked',
+		]
+	];
 }

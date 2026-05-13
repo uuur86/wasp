@@ -8,14 +8,14 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
-class Text extends FieldCreator
-{
-  public $hasOptions = false;
+class Text extends FieldCreator {
 
-  public $hasGroups  = false;
+	public $has_options	= false;
 
-  public $params     = [
-    'value'  => 'value',
-    'holder' => 'label'
-  ];
+	public $has_groups	= false;
+
+	public $params		= [
+		'value'		=> 'value',
+		'holder'	=> 'label'
+	];
 }

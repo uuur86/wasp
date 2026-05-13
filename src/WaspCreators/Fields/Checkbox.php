@@ -8,21 +8,19 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
-class Checkbox extends FieldCreator
-{
-  public $hasMultipleChoices = true;
+class Checkbox extends FieldCreator {
 
-  public $hasOptions = true;
+	public $has_options	= true;
 
-  public $hasGroups  = false;
+	public $has_groups	= false;
 
-  public $params = [
-    'options' => [
-      'id'      => 'id',
-      'name'    => 'name',
-      'label'   => 'val',
-      'value'   => 'key',
-      'checked' => 'checked',
-    ]
-  ];
+	public $params		= [
+		'options'	=> [
+			'id'		=> 'id',
+			'name'		=> 'name',
+			'label'		=> 'val',
+			'value'		=> 'key',
+			'checked'	=> 'checked',
+		]
+	];
 }
