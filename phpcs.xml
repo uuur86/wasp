@@ -27,9 +27,9 @@
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
 		<!-- Allow PSR-4 Class file naming instead of class-*.php -->
 		<exclude name="WordPress.Files.FileName"/>
-		<!-- Disable strict equals sign and array arrow alignment forcing -->
-		<exclude name="Generic.Formatting.MultipleStatementAlignment"/>
-		<exclude name="WordPress.Arrays.MultipleStatementAlignment"/>
+		<!-- Enforce strict equals sign and array arrow alignment -->
+		<!-- Removed exclusion for Generic.Formatting.MultipleStatementAlignment -->
+		<!-- Removed exclusion for WordPress.Arrays.MultipleStatementAlignment -->
 		<!-- (Optional) Disable Yoda condition requirement -->
 		<exclude name="WordPress.PHP.YodaConditions"/>
 	</rule>

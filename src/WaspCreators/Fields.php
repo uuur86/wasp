@@ -108,11 +108,10 @@ class Fields {
 		}
 
 		$type_arr = [
-			'text_input'        => 'Text',
-			'multi_text_input'  => 'Multitext',
-			'file_input'        => 'File',
-			'taginput'          => 'Taginput',
-			'taginput_regex'    => 'TaginputRegex',
+			'text_input'       => 'Text',
+			'multi_text_input' => 'Multitext',
+			'file_input'       => 'File',
+			'taginput'         => 'Taginput',
 		];
 
 		if ( isset( $type_arr[ $type ] ) ) {

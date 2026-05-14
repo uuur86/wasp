@@ -1,6 +1,9 @@
 /**
  * Wasp Reset Functionality
  *
+ * Handles single-field and bulk reset via AJAX.
+ * Default values are resolved server-side for security and encoding reliability.
+ *
  * @package wasp
  * @since 2.3.3
  */
@@ -28,32 +31,21 @@
 			var settingsName = $wrapper.data('settings-name') || waspReset.settingsName;
 			var fieldType = $wrapper.data('field-type') || 'text';
 
-			// Read default value from hidden input (more reliable than data attribute)
-			var $defaultInput = $wrapper.find('.wasp-reset-default-value');
-			var defaultValueJson = $defaultInput.val() || 'null';
-
-			// Parse JSON value
-			var defaultValue;
-			try {
-				defaultValue = JSON.parse(defaultValueJson);
-			} catch (e) {
-				defaultValue = defaultValueJson;
-			}
-
-			// Confirm with user
+			// Confirm with user.
 			if (!confirm(confirmMsg)) {
 				return;
 			}
 
+			// Default value is resolved server-side — no client-side value needed.
 			var data = {
 				action: 'wasp_reset_field',
 				nonce: nonce,
 				field_name: fieldName.replace(settingsName + '[', '').replace(']', ''),
 				settings_name: settingsName,
-				field_type: fieldType,
-				default_value: defaultValue
+				field_type: fieldType
 			};
 
+			var originalText = $btn.text();
 			$btn.prop('disabled', true).text(waspReset.messages.resetting);
 
 			$.ajax({
@@ -62,20 +54,28 @@
 				data: data,
 				success: function (response) {
 					if (response.success) {
-						$btn.prop('disabled', false).text(waspReset.messages.success);
+						// Update the field value in UI before reload.
+						WaspReset.updateFieldValue(
+							settingsName,
+							data.field_name,
+							response.data.value,
+							fieldType
+						);
 
-						// Reload page after short delay to show updated values
+						$btn.text(waspReset.messages.success);
+
+						// Reload page after short delay to show updated values.
 						setTimeout(function () {
 							window.location.reload();
-						}, 500);
+						}, 600);
 					} else {
 						alert(response.data.message || waspReset.messages.error);
-						$btn.prop('disabled', false).text('Reset');
+						$btn.prop('disabled', false).text(originalText);
 					}
 				},
 				error: function () {
 					alert(waspReset.messages.error);
-					$btn.prop('disabled', false).text('Reset');
+					$btn.prop('disabled', false).text(originalText);
 				}
 			});
 		},
@@ -87,7 +87,7 @@
 				return;
 			}
 
-			// Handle different field types
+			// Handle different field types.
 			switch (fieldType) {
 				case 'checkbox':
 				case 'radio':
@@ -102,13 +102,11 @@
 		},
 
 		updateCheckboxRadio: function ($field, value) {
-			// value should be '1' for checked, '' or null for unchecked
 			if (value == '1' || value === 1 || value === true) {
 				$field.prop('checked', true);
 			} else {
 				$field.prop('checked', false);
 			}
-			// Trigger change event for any listeners
 			$field.trigger('change');
 		},
 
@@ -116,16 +114,16 @@
 			var $wrapper = $field.closest('.taginput-wrapper');
 			var $tagsContainer = $wrapper.find('.taginput-tags');
 
-			// Clear existing tags
+			// Clear existing tags.
 			$tagsContainer.find('.taginput-tag').remove();
 
-			// Get the hidden field and update its value
-			$field.val(value || '');
+			// Update hidden field value (pipe-separated).
+			var displayValue = value || '';
+			$field.val(displayValue);
 
-			// Rebuild tags from value
-			if (value && typeof value === 'string' && value.trim() !== '') {
-				var tags = value.split('\n');
-				var $hiddenField = $field;
+			// Rebuild tags from value (pipe-separated format).
+			if (displayValue && typeof displayValue === 'string' && displayValue.trim() !== '') {
+				var tags = displayValue.split('|');
 
 				tags.forEach(function (tag) {
 					tag = tag.trim();
