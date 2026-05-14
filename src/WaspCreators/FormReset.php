@@ -246,8 +246,11 @@ class FormReset {
 			return;
 		}
 
+		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
 		$field_name    = isset( $_POST['field_name'] ) ? sanitize_text_field( wp_unslash( $_POST['field_name'] ) ) : '';
+		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
 		$field_type    = isset( $_POST['field_type'] ) ? sanitize_text_field( wp_unslash( $_POST['field_type'] ) ) : 'text';
+		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
 		$settings_name = isset( $_POST['settings_name'] ) ? sanitize_text_field( wp_unslash( $_POST['settings_name'] ) ) : '';
 
 		if ( empty( $field_name ) || empty( $settings_name ) ) {
@@ -294,6 +297,7 @@ class FormReset {
 			return;
 		}
 
+		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
 		$settings_name = isset( $_POST['settings_name'] ) ? sanitize_text_field( wp_unslash( $_POST['settings_name'] ) ) : $this->wasp->get_settings_name();
 
 		// Get current settings from database (AJAX is stateless).

@@ -87,7 +87,7 @@ abstract class FieldCreator {
 		$type_map = [
 			'taginput' => 'Taginput',
 		];
-		$type = isset( $type_map[ strtolower( $type_name ) ] ) ? $type_map[ strtolower( $type_name ) ] : $type_name;
+		$type     = isset( $type_map[ strtolower( $type_name ) ] ) ? $type_map[ strtolower( $type_name ) ] : $type_name;
 
 		$template = Templates::get( $type );
 

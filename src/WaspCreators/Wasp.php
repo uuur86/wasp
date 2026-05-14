@@ -33,7 +33,7 @@ class Wasp {
 	 *
 	 * @var string
 	 */
-	const VERSION = '2.3.2';
+	const VERSION = '3.0.0';
 
 	/**
 	 * Form title
@@ -296,26 +296,26 @@ class Wasp {
 			return;
 		}
 
-		$this->ajax = new Ajax( $domain );
-		$this->page_name = $page;
-		$this->domain = $domain;
+		$this->ajax          = new Ajax( $domain );
+		$this->page_name     = $page;
+		$this->domain        = $domain;
 		$this->settings_name = (string) $setting_name . '_settings';
-		$this->index_name = (string) $setting_name . '_index';
-		$this->option_names = [
+		$this->index_name    = (string) $setting_name . '_index';
+		$this->option_names  = [
 			'updated' => (string) $this->settings_name . '_form_updated',
-			'errors' => (string) $this->settings_name . '_form_errors',
+			'errors'  => (string) $this->settings_name . '_form_errors',
 		];
 
 		// for multiple settings field.
 		if ( ! empty( $row ) ) {
-			$row = $this->get_form_data( $row );
+			$row           = $this->get_form_data( $row );
 			$this->indexes = $this->get_indexes();
 
 			// Find the latest row value.
 			if ( ! empty( $this->indexes ) && is_array( $this->indexes ) ) {
-				$indexes = $this->indexes;
-				$last_row = end( $indexes );
-				$indexes = array_flip( $indexes );
+				$indexes       = $this->indexes;
+				$last_row      = end( $indexes );
+				$indexes       = array_flip( $indexes );
 				$last_settings = \get_option( $indexes[ $last_row ] );
 
 				// If row value hasn`t set by get value.
@@ -385,7 +385,7 @@ class Wasp {
 		$this->prepare_get_vars();
 
 		// Checks whether the form is updated.
-		$updated_name = $this->option_names['updated'];
+		$updated_name   = $this->option_names['updated'];
 		$option_updated = \get_option( $updated_name );
 
 		if ( ! $this->check_errors() && $option_updated === '1' ) {
@@ -521,11 +521,11 @@ class Wasp {
 
 		// Defaults.
 		$accepted = [
-			'cond' => true,
-			'name' => null,
-			'title' => null,
-			'desc' => null,
-			'after' => null,
+			'cond'   => true,
+			'name'   => null,
+			'title'  => null,
+			'desc'   => null,
+			'after'  => null,
 			'before' => null,
 		];
 
@@ -551,10 +551,10 @@ class Wasp {
 
 		$this->sections[ $this->section ] = [
 			'title' => $title,
-			'desc' => $desc,
+			'desc'  => $desc,
 		];
 
-		$this->current_section = $this->sections[ $this->section ];
+		$this->current_section       = $this->sections[ $this->section ];
 		$this->current_section['id'] = $this->section;
 
 		if ( ! empty( $after ) || ! empty( $before ) ) {
