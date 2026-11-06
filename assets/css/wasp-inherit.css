@@ -24,7 +24,8 @@
 	word-break: break-all;
 }
 
-.wasp-inheritable[data-wasp-state="inherited"] .wasp-inheritable-field,
+/* Auto-override fields stay editable, so they are not dimmed. */
+.wasp-inheritable[data-wasp-state="inherited"]:not([data-wasp-auto="1"]) .wasp-inheritable-field,
 .wasp-inheritable[data-wasp-state="locked"] .wasp-inheritable-field {
 	opacity: 0.6;
 }

@@ -292,6 +292,10 @@ function config_func( $form ) {
 - Unchecked: the field shows the inherited value and nothing is stored for it.
 - Checked: the field's own value is stored, even an empty one.
 - Opt a field out with `'inherit' => false` in its config.
+- `'auto_override' => true` keeps fields editable: changing a value turns its override on, and
+  getting back to the inherited value turns it off. A theme can add a revert control: any element
+  with `data-wasp-inherit-revert` inside the `Inherit` template (label: `[revert_label]`).
+- Fields with options show the option label of the inherited value ("Yes", not "1").
 - `$form->get_resolved_values()` returns defaults + fallback + own values merged.
 
 ## Themes per form

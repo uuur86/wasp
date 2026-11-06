@@ -64,12 +64,12 @@ class FieldsTest extends BaseTestCase {
 
 		foreach ( $types as $type ) {
 			$args = [
-				'type' => $type,
-				'id' => 'test_id',
-				'name' => 'test_name',
-				'value' => 'test_value',
-				'option' => 'test_option',
-				'options' => [
+				'type'        => $type,
+				'id'          => 'test_id',
+				'name'        => 'test_name',
+				'value'       => 'test_value',
+				'option'      => 'test_option',
+				'options'     => [
 					[
 						'value' => 'opt1',
 						'label' => 'Option 1',
@@ -80,10 +80,10 @@ class FieldsTest extends BaseTestCase {
 					],
 				],
 				'placeholder' => 'Test Placeholder',
-				'presets' => 'Test Presets',
-				'field_type' => 'url',
+				'presets'     => 'Test Presets',
+				'field_type'  => 'url',
 				'html_before' => '<div class="before">',
-				'html_after' => '</div>',
+				'html_after'  => '</div>',
 			];
 
 			$html = Fields::prepare( $args );
@@ -103,7 +103,7 @@ class FieldsTest extends BaseTestCase {
 	 */
 	public function test_fields_not_found() {
 		$args = [
-			'type' => 'text_input',
+			'type'      => 'text_input',
 			'not_found' => 'Field Not Found Message',
 		];
 

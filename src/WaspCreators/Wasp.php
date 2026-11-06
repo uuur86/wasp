@@ -390,7 +390,7 @@ class Wasp {
 			return;
 		}
 
-		$this->ajax          = new Ajax( $domain );
+		$this->ajax = new Ajax( $domain );
 		$this->ajax->set_capability( $this->capability );
 		$this->page_name     = $page;
 		$this->domain        = $domain;
@@ -1161,6 +1161,8 @@ class Wasp {
 				'source_label' => $this->fallback_args['source_label'],
 				'locked_label' => $this->fallback_args['locked_label'],
 				'empty_label'  => $this->fallback_args['empty_label'],
+				'revert_label' => $this->fallback_args['revert_label'],
+				'auto'         => $this->fallback_args['auto_override'],
 			];
 		}
 
@@ -2063,25 +2065,34 @@ class Wasp {
 	 * @param array $args {
 	 *     Optional.
 	 *
-	 *     @type string[] $locked       Field names that always use the fallback and cannot be overridden.
-	 *     @type string   $label        Toggle label. Default "Override".
-	 *     @type string   $source_label Label in front of the fallback value. Default "Inherited".
-	 *     @type string   $locked_label Toggle label for locked fields. Default "Locked".
-	 *     @type string   $empty_label  Text shown for an empty fallback value. Default "(empty)".
+	 *     @type string[] $locked        Field names that always use the fallback and cannot be overridden.
+	 *     @type string   $label         Toggle label. Default "Override".
+	 *     @type string   $source_label  Label in front of the fallback value. Default "Inherited".
+	 *     @type string   $locked_label  Toggle label for locked fields. Default "Locked".
+	 *     @type string   $empty_label   Text shown for an empty fallback value. Default "(empty)".
+	 *     @type string   $revert_label  Label of a "go back to the inherited value" control, for themes
+	 *                                   that show one ([revert_label] in the Inherit template).
+	 *                                   Default "Use inherited value".
+	 *     @type bool     $auto_override Keep inheritable fields editable: editing a field turns its
+	 *                                   override on, getting back to the inherited value turns it off.
+	 *                                   Default false (fields stay disabled until the override is on).
 	 * }
 	 * @return $this
 	 */
 	public function set_fallback_values( array $values, array $args = [] ) {
 		$accepted = [
-			'locked'       => [],
-			'label'        => \esc_html__( 'Override', 'wasp' ),
-			'source_label' => \esc_html__( 'Inherited', 'wasp' ),
-			'locked_label' => \esc_html__( 'Locked', 'wasp' ),
-			'empty_label'  => \esc_html__( '(empty)', 'wasp' ),
+			'locked'        => [],
+			'label'         => \esc_html__( 'Override', 'wasp' ),
+			'source_label'  => \esc_html__( 'Inherited', 'wasp' ),
+			'locked_label'  => \esc_html__( 'Locked', 'wasp' ),
+			'empty_label'   => \esc_html__( '(empty)', 'wasp' ),
+			'revert_label'  => \esc_html__( 'Use inherited value', 'wasp' ),
+			'auto_override' => false,
 		];
 
-		$args           = array_merge( $accepted, array_intersect_key( $args, $accepted ) );
-		$args['locked'] = array_values( array_map( 'strval', (array) $args['locked'] ) );
+		$args                  = array_merge( $accepted, array_intersect_key( $args, $accepted ) );
+		$args['locked']        = array_values( array_map( 'strval', (array) $args['locked'] ) );
+		$args['auto_override'] = (bool) $args['auto_override'];
 
 		$this->fallback_values = $values;
 		$this->fallback_args   = $args;

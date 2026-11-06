@@ -130,7 +130,7 @@ class Ajax {
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only the keys are used, and only to look up server-side config.
-		$requested = ( isset( $_REQUEST['fields'] ) && is_array( $_REQUEST['fields'] ) ) ? array_keys( $_REQUEST['fields'] ) : [];
+		$requested = ( isset( $_REQUEST['fields'] ) && is_array( $_REQUEST['fields'] ) ) ? array_keys( wp_unslash( $_REQUEST['fields'] ) ) : [];
 		$keys      = array_values( array_intersect( array_map( 'strval', $requested ), array_map( 'strval', array_keys( $this->loads ) ) ) );
 
 		if ( empty( $keys ) ) {

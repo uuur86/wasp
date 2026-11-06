@@ -11,6 +11,10 @@
 - `Storage` class; `get_storage()`, `get_capability()`.
 - `write_values()`: stores values without running the form middleware (for resets and other programmatic writes).
 - `Templates::resolve()`; themes accept absolute paths and fall back to the default theme per template.
+- Fallback layer: `auto_override` option. Inheritable fields stay editable; editing a field turns its
+  override on, getting back to the inherited value turns it off. Themes can add a revert control with
+  `data-wasp-inherit-revert` and the `[revert_label]` placeholder (`revert_label` option).
+- The inherit control shows option labels ("Yes") instead of stored values ("1"); `Fields::option_labels()`.
 
 ### Fixed
 - Security: the AJAX loader called the hook and parameters sent by the browser, so anyone holding the

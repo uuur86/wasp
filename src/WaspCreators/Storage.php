@@ -70,16 +70,16 @@ class Storage {
 	/**
 	 * Gets an option.
 	 *
-	 * @param string $name    Option name.
-	 * @param mixed  $default Value returned when the option does not exist.
+	 * @param string $name     Option name.
+	 * @param mixed  $fallback Value returned when the option does not exist.
 	 * @return mixed
 	 */
-	public function get( $name, $default = false ) {
+	public function get( $name, $fallback = false ) {
 		if ( $this->is_network() ) {
-			return \get_site_option( $name, $default );
+			return \get_site_option( $name, $fallback );
 		}
 
-		return \get_option( $name, $default );
+		return \get_option( $name, $fallback );
 	}
 
 	/**

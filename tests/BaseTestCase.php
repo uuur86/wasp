@@ -23,8 +23,8 @@ class BaseTestCase extends TestCase {
 		parent::setUp();
 		Monkey\setUp();
 
-		$_GET = [];
-		$_POST = [];
+		$_GET     = [];
+		$_POST    = [];
 		$_REQUEST = [];
 
 		// Mock common translation functions.

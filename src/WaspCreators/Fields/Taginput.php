@@ -1,6 +1,7 @@
 <?php
-
 /**
+ * Taginput field type.
+ *
  * @package wasp
  */
 
@@ -8,16 +9,34 @@ namespace WaspCreators\Fields;
 
 use WaspCreators\FieldCreator;
 
+/**
+ * Taginput field.
+ */
 class Taginput extends FieldCreator {
 
-	public $has_options	= false;
+	/**
+	 * Whether the field renders a list of options.
+	 *
+	 * @var bool
+	 */
+	public $has_options = false;
 
-	public $has_groups	= false;
+	/**
+	 * Whether options can be grouped.
+	 *
+	 * @var bool
+	 */
+	public $has_groups = false;
 
-	public $params		= [
-		'value'		=> 'value',
-		'holder'	=> 'label',
-		'presets'	=> 'presets',
+	/**
+	 * Maps template placeholders to field arguments.
+	 *
+	 * @var array
+	 */
+	public $params = [
+		'value'      => 'value',
+		'holder'     => 'label',
+		'presets'    => 'presets',
 		'field_type' => 'field_type',
 	];
 }
