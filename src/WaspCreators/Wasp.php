@@ -9,7 +9,7 @@
  * @package wasp
  * @author Uğur Biçer <uuur86@yandex.com>
  * @license GPLv3 or later
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 namespace WaspCreators;
@@ -21,6 +21,7 @@ if ( class_exists( '\\WaspCreators\\Wasp' ) || ! defined( 'ABSPATH' ) ) {
 use WaspCreators\Ajax;
 use WaspCreators\FormReset;
 use WaspCreators\Templates;
+use WaspCreators\Storage;
 
 /**
  * Main class for Wasp plugin.
@@ -33,7 +34,7 @@ class Wasp {
 	 *
 	 * @var string
 	 */
-	const VERSION = '3.0.0';
+	const VERSION = '3.1.0';
 
 	/**
 	 * Form title
@@ -282,21 +283,115 @@ class Wasp {
 
 
 	/**
+	 * Option storage backend.
+	 *
+	 * @since 3.1.0
+	 * @var Storage
+	 */
+	protected $storage;
+
+	/**
+	 * Capability required to save the form.
+	 *
+	 * @since 3.1.0
+	 * @var string
+	 */
+	protected $capability = 'manage_options';
+
+	/**
+	 * Whether the form is saved through the network admin (multisite + network storage).
+	 *
+	 * @since 3.1.0
+	 * @var bool
+	 */
+	protected $network_form = false;
+
+	/**
+	 * Theme path used by this form's fields.
+	 *
+	 * @since 3.1.0
+	 * @var string|null
+	 */
+	protected $theme = null;
+
+	/**
+	 * Values of the fallback layer (for example network defaults), or null when disabled.
+	 *
+	 * @since 3.1.0
+	 * @var array|null
+	 */
+	protected $fallback_values = null;
+
+	/**
+	 * Fallback options: labels and locked keys.
+	 *
+	 * @since 3.1.0
+	 * @var array
+	 */
+	protected $fallback_args = [];
+
+	/**
+	 * Keys of fields that can inherit from the fallback layer.
+	 *
+	 * @since 3.1.0
+	 * @var array
+	 */
+	protected $inherit_keys = [];
+
+	/**
+	 * Name of the hidden input group that carries the "override" toggles.
+	 *
+	 * @since 3.1.0
+	 * @var string
+	 */
+	const OVERRIDE_KEY = '__wasp_override';
+
+	/**
+	 * True while write_values() stores values that must not go through the form middleware.
+	 *
+	 * @since 3.1.0
+	 * @var bool
+	 */
+	protected $raw_write = false;
+
+
+
+	/**
 	 * Constructor - Sets up the Wasp settings page with title, settings name, domain, and optional row handling.
 	 *
 	 * @param string   $page Unique page name.
 	 * @param string   $setting_name Setting name will be saved in options.
 	 * @param string   $domain Domain for localize.
 	 * @param int|null $row Get variable name for multiple form row.
+	 * @param array    $options {
+	 *     Optional. Since 3.1.0.
+	 *
+	 *     @type string $storage    'site' (default) stores values with get_option(); 'network' stores them
+	 *                              network wide with get_site_option() and saves the form from the network admin.
+	 *     @type string $capability Capability required to save. Default 'manage_options', or
+	 *                              'manage_network_options' for network storage.
+	 * }
 	 */
-	public function __construct( string $page, string $setting_name, string $domain, $row = null ) {
+	public function __construct( string $page, string $setting_name, string $domain, $row = null, array $options = [] ) {
 		global $pagenow;
+
+		$storage_mode     = isset( $options['storage'] ) ? (string) $options['storage'] : Storage::SITE;
+		$this->storage    = new Storage( $storage_mode );
+		$this->capability = $this->storage->is_network() ? 'manage_network_options' : 'manage_options';
+
+		if ( ! empty( $options['capability'] ) && is_string( $options['capability'] ) ) {
+			$this->capability = $options['capability'];
+		}
+
+		// The network admin cannot save through options.php, so network forms use their own handler.
+		$this->network_form = $this->storage->is_network() && function_exists( 'is_multisite' ) && \is_multisite();
 
 		if ( ! isset( $page ) || empty( $page ) ) {
 			return;
 		}
 
 		$this->ajax          = new Ajax( $domain );
+		$this->ajax->set_capability( $this->capability );
 		$this->page_name     = $page;
 		$this->domain        = $domain;
 		$this->settings_name = (string) $setting_name . '_settings';
@@ -316,7 +411,7 @@ class Wasp {
 				$indexes       = $this->indexes;
 				$last_row      = end( $indexes );
 				$indexes       = array_flip( $indexes );
-				$last_settings = \get_option( $indexes[ $last_row ] );
+				$last_settings = $this->storage->get( $indexes[ $last_row ] );
 
 				// If row value hasn`t set by get value.
 				if ( empty( $row ) ) {
@@ -341,28 +436,39 @@ class Wasp {
 			$this->settings_name = $setting_name . '_' . $this->settings_row . '_settings';
 
 			// Save index data.
-			if ( false === \get_option( $this->index_name ) ) {
+			if ( false === $this->storage->get( $this->index_name ) ) {
 				// Add index option value for first time.
-				\add_option( $this->index_name, [ $this->settings_name => $this->settings_row ] );
+				$this->storage->add( $this->index_name, [ $this->settings_name => $this->settings_row ] );
 			} else {
 				// Update indexes.
 				$this->indexes[ $this->settings_name ] = $this->settings_row;
 
 				// Update index option value.
-				\update_option( $this->index_name, $this->indexes );
+				$this->storage->update( $this->index_name, $this->indexes );
 			}
 		}
 
 		// Append setting_values.
-		$settings = \get_option( $this->settings_name );
+		$settings = $this->storage->get( $this->settings_name );
 
 		if ( false === $settings ) {
-			\add_option( $this->settings_name, [] );
+			$this->storage->add( $this->settings_name, [] );
+			$this->setting_values = [];
 		} else {
-			$this->setting_values = $settings;
+			$this->setting_values = is_array( $settings ) ? $settings : [];
 		}
 
 		$this->is_ready = true;
+
+		// Network form submission (network/edit.php?action=<page>) is handled by handle_network_save().
+		if ( $this->network_form && $pagenow === 'edit.php' ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( ! isset( $_GET['action'] ) || $_GET['action'] !== $page ) {
+				$this->is_ready = false;
+			}
+
+			return;
+		}
 
 		// returns if in wp option backend process.
 		if ( $pagenow === 'options.php' ) {
@@ -386,11 +492,11 @@ class Wasp {
 
 		// Checks whether the form is updated.
 		$updated_name   = $this->option_names['updated'];
-		$option_updated = \get_option( $updated_name );
+		$option_updated = $this->storage->get( $updated_name );
 
 		if ( ! $this->check_errors() && $option_updated === '1' ) {
 			$this->form_updated = true;
-			\delete_option( $updated_name );
+			$this->storage->delete( $updated_name );
 		}
 	}
 
@@ -619,11 +725,11 @@ class Wasp {
 		// If setting has multiple rows then delete from settings index record.
 		if ( $indexes !== false ) {
 			unset( $indexes[ $name ] );
-			\update_option( $this->index_name, $indexes );
+			$this->storage->update( $this->index_name, $indexes );
 		}
 
-		if ( ! empty( \get_option( $name, null ) ) ) {
-			\delete_option( $name );
+		if ( ! empty( $this->storage->get( $name, null ) ) ) {
+			$this->storage->delete( $name );
 		}
 	}
 
@@ -637,6 +743,20 @@ class Wasp {
 	 * @return mixed|null Setting value.
 	 */
 	public function get_value( $name ) {
+		// With a fallback layer: locked keys always show the fallback, an override
+		// (even an empty one) wins, otherwise the fallback value is shown.
+		if ( $this->has_fallback() ) {
+			if ( ! $this->is_locked( $name ) && is_array( $this->setting_values ) && array_key_exists( $name, $this->setting_values ) ) {
+				return $this->setting_values[ $name ];
+			}
+
+			if ( array_key_exists( $name, $this->fallback_values ) ) {
+				return $this->fallback_values[ $name ];
+			}
+
+			return isset( $this->default_values[ $name ] ) ? $this->default_values[ $name ] : null;
+		}
+
 		$value = $this->get_setting( $name );
 
 		// If we have a saved value (including empty string), use it.
@@ -831,6 +951,7 @@ class Wasp {
 			'field_type'        => 'url',
 			'placeholder'       => null,
 			'presets'           => null,
+			'inherit'           => true,
 		];
 
 		$args = array_intersect_key( $args, $accepted );
@@ -909,6 +1030,7 @@ class Wasp {
 			'placeholder'       => isset( $placeholder ) ? $placeholder : '',
 			'presets'           => isset( $presets ) ? $presets : '',
 			'field_type'        => isset( $field_type ) ? $field_type : 'url',
+			'inherit'           => ( false !== $args['inherit'] ) && ( 'file_input' !== $type ),
 		];
 
 		if ( ! empty( $default ) ) {
@@ -1016,6 +1138,31 @@ class Wasp {
 			'presets' => isset( $args['presets'] ) ? $args['presets'] : '',
 			'field_type' => isset( $args['field_type'] ) ? $args['field_type'] : 'url',
 		];
+
+		if ( ! empty( $this->theme ) ) {
+			$field_args['theme'] = $this->theme;
+		}
+
+		if ( $this->has_fallback() && ! empty( $args['inherit'] ) ) {
+			$key                  = $args['key'];
+			$this->inherit_keys[] = $key;
+			$locked               = $this->is_locked( $key );
+			$inherited_value      = array_key_exists( $key, $this->fallback_values )
+				? $this->fallback_values[ $key ]
+				: ( isset( $this->default_values[ $key ] ) ? $this->default_values[ $key ] : null );
+
+			$field_args['inherit'] = [
+				'id'           => $args['id'] . '_inherit',
+				'name'         => $this->settings_name . '[' . self::OVERRIDE_KEY . '][' . $key . ']',
+				'value'        => $inherited_value,
+				'overridden'   => ! $locked && is_array( $this->setting_values ) && array_key_exists( $key, $this->setting_values ),
+				'locked'       => $locked,
+				'label'        => $this->fallback_args['label'],
+				'source_label' => $this->fallback_args['source_label'],
+				'locked_label' => $this->fallback_args['locked_label'],
+				'empty_label'  => $this->fallback_args['empty_label'],
+			];
+		}
 
 		if ( isset( $args['option'] ) ) {
 			$field_args['option'] = $args['option'];
@@ -1168,7 +1315,52 @@ class Wasp {
 	public function settings_input_middleware( $inputs ) {
 		global $pagenow;
 
+		// Values written by write_values() are already final.
+		if ( $this->raw_write ) {
+			return $inputs;
+		}
+
+		if ( ! is_array( $inputs ) ) {
+			$inputs = [];
+		}
+
+		// Read and remove the "override" toggles sent by inheritable fields. The group
+		// is only present on real form submissions (form_start() adds a marker), so
+		// programmatic update_option() calls never drop inherited keys.
+		$overrides      = [];
+		$is_form_submit = isset( $inputs[ self::OVERRIDE_KEY ] );
+
+		if ( $is_form_submit ) {
+			if ( is_array( $inputs[ self::OVERRIDE_KEY ] ) ) {
+				$overrides = array_map( 'strval', array_keys( $inputs[ self::OVERRIDE_KEY ] ) );
+			}
+
+			unset( $inputs[ self::OVERRIDE_KEY ] );
+		}
+
+		if ( ! is_array( $this->sanitize ) ) {
+			$this->sanitize = [];
+		}
+
+		// Inheritable fields are saved only when their override toggle is on; locked
+		// fields are never saved. Dropped keys are not sanitized, and they also leave
+		// the stored values so the field goes back to the fallback value.
+		$dropped = [];
+
+		if ( $this->has_fallback() && $is_form_submit ) {
+			foreach ( $this->inherit_keys as $key ) {
+				if ( $this->is_locked( $key ) || ! in_array( (string) $key, $overrides, true ) ) {
+					unset( $inputs[ $key ] );
+					$dropped[ $key ] = true;
+				}
+			}
+		}
+
 		foreach ( $this->sanitize as $input_key => $prop ) {
+			if ( isset( $dropped[ $input_key ] ) ) {
+				continue;
+			}
+
 			// Sanitize and set external hidden post values into setting form values.
 			if ( ! isset( $inputs[ $input_key ] ) ) {
 				// phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -1371,12 +1563,13 @@ class Wasp {
 		}
 
 		// Mark it as updated ( settiings saved ).
-		\update_option( $this->option_names['updated'], '1' );
+		$this->storage->update( $this->option_names['updated'], '1' );
 
 		$this->save_errors();
 
 		// Merge with prior saved settings.
-		$inputs += $this->setting_values;
+		$previous = is_array( $this->setting_values ) ? array_diff_key( $this->setting_values, $dropped ) : [];
+		$inputs  += $previous;
 
 		return $inputs;
 	}
@@ -1419,10 +1612,10 @@ class Wasp {
 	 */
 	public function get_errors() {
 		if ( $this->errors !== false && empty( $this->errors ) ) {
-			$this->errors = \get_option( $this->option_names['errors'], null );
+			$this->errors = $this->storage->get( $this->option_names['errors'], null );
 
 			if ( ! empty( $this->errors ) ) {
-				\delete_option( $this->option_names['errors'] );
+				$this->storage->delete( $this->option_names['errors'] );
 			}
 		}
 
@@ -1436,7 +1629,7 @@ class Wasp {
 	 */
 	protected function save_errors() {
 		if ( ! empty( $this->errors ) ) {
-			\update_option( $this->option_names['errors'], $this->errors );
+			$this->storage->update( $this->option_names['errors'], $this->errors );
 		}
 	}
 
@@ -1448,6 +1641,27 @@ class Wasp {
 	public function register() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		global $_POST;
+
+		$this->ajax->load_handler( $this->ajax_loads );
+
+		// Network forms are saved by handle_network_save() on network/edit.php.
+		if ( $this->network_form ) {
+			\add_action( 'network_admin_edit_' . $this->page_name, [ $this, 'handle_network_save' ] );
+
+			return;
+		}
+
+		// Let a custom capability save through options.php.
+		if ( 'manage_options' !== $this->capability ) {
+			$capability = $this->capability;
+
+			\add_filter(
+				'option_page_capability_' . $this->page_name,
+				function () use ( $capability ) {
+					return $capability;
+				}
+			);
+		}
 
 		$all_settings = $this->get_indexes();
 
@@ -1462,8 +1676,64 @@ class Wasp {
 		} else {
 			\register_setting( $this->page_name, $this->settings_name, array( $this, 'settings_input_middleware' ) );
 		}
+	}
 
-		$this->ajax->load_handler( $this->ajax_loads );
+
+
+	/**
+	 * Saves a network form. Hooked to "network_admin_edit_{page}" by register().
+	 *
+	 * Mirrors what options.php does for site forms: capability and nonce check,
+	 * sanitize, store, then redirect back to the form.
+	 *
+	 * @since 3.1.0
+	 */
+	public function handle_network_save() {
+		if ( ! \current_user_can( $this->capability ) ) {
+			\wp_die( \esc_html__( 'Sorry, you are not allowed to manage these options.', 'wasp' ), '', [ 'response' => 403 ] );
+		}
+
+		\check_admin_referer( $this->network_nonce_action(), '_wasp_nonce' );
+
+		$option_name = $this->settings_name;
+		$indexes     = $this->get_indexes();
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
+		if ( is_array( $indexes ) && ! empty( $indexes ) && isset( $_POST['setting_name'] ) ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Verified above.
+			$requested = \sanitize_text_field( \wp_unslash( $_POST['setting_name'] ) );
+
+			if ( array_key_exists( $requested, $indexes ) ) {
+				$option_name = $requested;
+			}
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified above; sanitized field by field in settings_input_middleware().
+		$raw   = ( isset( $_POST[ $option_name ] ) && is_array( $_POST[ $option_name ] ) ) ? \wp_unslash( $_POST[ $option_name ] ) : [];
+		$value = $this->settings_input_middleware( $raw );
+
+		$this->storage->update( $option_name, $value );
+
+		$redirect = \wp_get_referer();
+
+		if ( empty( $redirect ) ) {
+			$redirect = \network_admin_url( 'admin.php?page=' . rawurlencode( $this->page_name ) );
+		}
+
+		\wp_safe_redirect( \add_query_arg( 'updated', 'true', $redirect ) );
+		exit;
+	}
+
+
+
+	/**
+	 * Nonce action used by network forms.
+	 *
+	 * @since 3.1.0
+	 * @return string
+	 */
+	protected function network_nonce_action() {
+		return 'wasp_network_save_' . $this->page_name;
 	}
 
 
@@ -1497,10 +1767,14 @@ class Wasp {
 	 * Form starter
 	 */
 	public function form() {
+		$action = $this->network_form
+			? \network_admin_url( 'edit.php?action=' . rawurlencode( $this->page_name ) )
+			: 'options.php';
+
 		if ( $this->has_media ) {
-			echo '<form method="post" action="options.php" enctype="multipart/form-data">';
+			echo '<form method="post" action="' . \esc_url( $action ) . '" enctype="multipart/form-data">';
 		} else {
-			echo '<form method="post" action="options.php">';
+			echo '<form method="post" action="' . \esc_url( $action ) . '">';
 		}
 	}
 
@@ -1547,11 +1821,22 @@ class Wasp {
 			$this->form_reset->enqueue_scripts();
 		}
 
+		if ( $this->has_fallback() ) {
+			$this->enqueue_inherit_assets();
+
+			// Marks the submission as a form post (see settings_input_middleware()).
+			$this->add_hidden_field( $this->settings_name . '[' . self::OVERRIDE_KEY . '][' . self::OVERRIDE_KEY . ']', '1' );
+		}
+
 		// Print HTML form tag.
 		$this->form();
 
 		// Display necessary hidden fields for settings.
-		\settings_fields( $this->page_name );
+		if ( $this->network_form ) {
+			\wp_nonce_field( $this->network_nonce_action(), '_wasp_nonce', ! isset( $this->hidden_fields['_wp_http_referer'] ) );
+		} else {
+			\settings_fields( $this->page_name );
+		}
 
 		$this->add_hidden_field( 'setting_name', $this->settings_name );
 		$this->put_hidden_fields();
@@ -1645,7 +1930,7 @@ class Wasp {
 			foreach ( $indexes as $name => $id ) {
 				$this->rows[ $id ] = [
 					'name' => $name,
-					'fields' => \get_option( $name ),
+					'fields' => $this->storage->get( $name ),
 				];
 			}
 		}
@@ -1665,7 +1950,7 @@ class Wasp {
 			return false;
 		}
 
-		return \get_option( $this->index_name );
+		return $this->storage->get( $this->index_name );
 	}
 
 
@@ -1681,19 +1966,20 @@ class Wasp {
 		// If setting has multiple rows then delete from settings index record.
 		if ( $indexes !== false ) {
 
-			foreach ( $indexes as $key => $value ) {
-				\delete_option( $value );
+			// Index maps option name => row number, so delete by name.
+			foreach ( array_keys( (array) $indexes ) as $option_name ) {
+				$this->storage->delete( $option_name );
 			}
 
-			\delete_option( $this->index_name );
+			$this->storage->delete( $this->index_name );
 		}
 
 		foreach ( $this->option_names as $key => $value ) {
-			\delete_option( $value );
+			$this->storage->delete( $value );
 		}
 
-		if ( \get_option( $this->settings_name ) !== false ) {
-			\delete_option( $this->settings_name );
+		if ( $this->storage->get( $this->settings_name ) !== false ) {
+			$this->storage->delete( $this->settings_name );
 		}
 	}
 
@@ -1755,7 +2041,193 @@ class Wasp {
 	 * @param string $path Path to the template files.
 	 */
 	public function set_theme( $path ) {
+		$this->theme = $path;
+
+		// Also set the global theme for fields rendered outside this form (AJAX loaders).
 		Templates::set( $path );
+	}
+
+
+
+	/**
+	 * Enables a fallback layer: fields show the fallback value until the user
+	 * turns on "override" for that field, and only overridden values are saved.
+	 *
+	 * Typical use is "network default + per-site override" on multisite, but any
+	 * two-level setting works (global default + per-item value, parent + child).
+	 * Call it before load_form().
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array $values Fallback values keyed by field name.
+	 * @param array $args {
+	 *     Optional.
+	 *
+	 *     @type string[] $locked       Field names that always use the fallback and cannot be overridden.
+	 *     @type string   $label        Toggle label. Default "Override".
+	 *     @type string   $source_label Label in front of the fallback value. Default "Inherited".
+	 *     @type string   $locked_label Toggle label for locked fields. Default "Locked".
+	 *     @type string   $empty_label  Text shown for an empty fallback value. Default "(empty)".
+	 * }
+	 * @return $this
+	 */
+	public function set_fallback_values( array $values, array $args = [] ) {
+		$accepted = [
+			'locked'       => [],
+			'label'        => \esc_html__( 'Override', 'wasp' ),
+			'source_label' => \esc_html__( 'Inherited', 'wasp' ),
+			'locked_label' => \esc_html__( 'Locked', 'wasp' ),
+			'empty_label'  => \esc_html__( '(empty)', 'wasp' ),
+		];
+
+		$args           = array_merge( $accepted, array_intersect_key( $args, $accepted ) );
+		$args['locked'] = array_values( array_map( 'strval', (array) $args['locked'] ) );
+
+		$this->fallback_values = $values;
+		$this->fallback_args   = $args;
+
+		return $this;
+	}
+
+
+
+	/**
+	 * Whether a fallback layer is enabled.
+	 *
+	 * @since 3.1.0
+	 * @return bool
+	 */
+	public function has_fallback() {
+		return is_array( $this->fallback_values );
+	}
+
+
+
+	/**
+	 * Returns the fallback values, or null when no fallback layer is set.
+	 *
+	 * @since 3.1.0
+	 * @return array|null
+	 */
+	public function get_fallback_values() {
+		return $this->fallback_values;
+	}
+
+
+
+	/**
+	 * Whether a field is locked to its fallback value.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $name Field name.
+	 * @return bool
+	 */
+	public function is_locked( $name ) {
+		return $this->has_fallback() && in_array( (string) $name, $this->fallback_args['locked'], true );
+	}
+
+
+
+	/**
+	 * Whether the field can inherit from the fallback layer.
+	 *
+	 * Only fields registered with load_form() / field() in the current request are known.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $name Field name.
+	 * @return bool
+	 */
+	public function is_inheritable( $name ) {
+		return $this->has_fallback() && in_array( $name, $this->inherit_keys, true );
+	}
+
+
+
+	/**
+	 * Returns the values the form currently resolves to: defaults, then the
+	 * fallback layer, then this form's own saved values (locked keys excepted).
+	 *
+	 * @since 3.1.0
+	 * @return array
+	 */
+	public function get_resolved_values() {
+		$own      = is_array( $this->setting_values ) ? $this->setting_values : [];
+		$fallback = $this->has_fallback() ? $this->fallback_values : [];
+
+		if ( $this->has_fallback() && ! empty( $this->fallback_args['locked'] ) ) {
+			$own = array_diff_key( $own, array_flip( $this->fallback_args['locked'] ) );
+		}
+
+		return array_merge( $this->default_values, $fallback, $own );
+	}
+
+
+
+	/**
+	 * Stores the form's values directly, bypassing the form middleware.
+	 *
+	 * WordPress runs the registered sanitize callback on every update_option() of
+	 * this option. The middleware merges previously saved values back in, which is
+	 * right for a form post but would undo a programmatic reset. Use this method
+	 * for writes that are not form submissions.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param array $values Values to store.
+	 * @return bool
+	 */
+	public function write_values( array $values ) {
+		$this->raw_write = true;
+
+		try {
+			$result = $this->storage->update( $this->settings_name, $values );
+		} finally {
+			$this->raw_write = false;
+		}
+
+		$this->setting_values = $values;
+
+		return $result;
+	}
+
+
+
+	/**
+	 * Returns the storage backend.
+	 *
+	 * @since 3.1.0
+	 * @return Storage
+	 */
+	public function get_storage() {
+		return $this->storage;
+	}
+
+
+
+	/**
+	 * Returns the capability required to save the form.
+	 *
+	 * @since 3.1.0
+	 * @return string
+	 */
+	public function get_capability() {
+		return $this->capability;
+	}
+
+
+
+	/**
+	 * Enqueues the small script and style used by inheritable fields.
+	 *
+	 * @since 3.1.0
+	 */
+	protected function enqueue_inherit_assets() {
+		$base_file = dirname( __DIR__, 2 ) . '/wasp.php';
+
+		\wp_enqueue_script( 'wasp-inherit', \plugins_url( 'assets/js/wasp-inherit.js', $base_file ), [], self::VERSION, true );
+		\wp_enqueue_style( 'wasp-inherit', \plugins_url( 'assets/css/wasp-inherit.css', $base_file ), [], self::VERSION );
 	}
 
 

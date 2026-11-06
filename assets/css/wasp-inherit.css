@@ -1,0 +1,30 @@
+/**
+ * Wasp inheritable fields — neutral defaults. Themes can override everything.
+ *
+ * @package wasp
+ * @since 3.1.0
+ */
+.wasp-inherit {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 16px;
+	margin-block-end: 6px;
+	font-size: 12px;
+}
+
+.wasp-inherit-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.wasp-inherit-source code {
+	font-size: 11px;
+	word-break: break-all;
+}
+
+.wasp-inheritable[data-wasp-state="inherited"] .wasp-inheritable-field,
+.wasp-inheritable[data-wasp-state="locked"] .wasp-inheritable-field {
+	opacity: 0.6;
+}

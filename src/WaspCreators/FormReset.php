@@ -225,12 +225,51 @@ class FormReset {
 			return false;
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( $this->wasp->get_capability() ) ) {
 			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'wasp' ) ] );
 			return false;
 		}
 
 		return true;
+	}
+
+	/**
+	 * Whether this request targets this form.
+	 *
+	 * Several Wasp forms can be loaded at once and each registers the same AJAX
+	 * actions, so a handler only answers for its own settings name. The option
+	 * that gets written is always this form's own option, never a name taken
+	 * from the request.
+	 *
+	 * @since 3.1.0
+	 * @return bool
+	 */
+	protected function is_own_request() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Only used to pick the handler; nonce is checked next.
+		$requested = isset( $_POST['settings_name'] ) ? sanitize_text_field( wp_unslash( $_POST['settings_name'] ) ) : '';
+
+		return ( '' === $requested || $requested === $this->wasp->get_settings_name() );
+	}
+
+	/**
+	 * Value a field returns to after a reset: the fallback value when the form has
+	 * a fallback layer, otherwise the default value.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $field_name Field name.
+	 * @return mixed|null
+	 */
+	protected function reset_value( $field_name ) {
+		$fallback = $this->wasp->get_fallback_values();
+
+		if ( is_array( $fallback ) && array_key_exists( $field_name, $fallback ) ) {
+			return $fallback[ $field_name ];
+		}
+
+		$default_values = $this->wasp->get_default_values();
+
+		return array_key_exists( $field_name, $default_values ) ? $default_values[ $field_name ] : null;
 	}
 
 	/**
@@ -242,6 +281,10 @@ class FormReset {
 	 * @since 2.3.3
 	 */
 	public function ajax_reset_field() {
+		if ( ! $this->is_own_request() ) {
+			return;
+		}
+
 		if ( ! $this->validate_ajax_request() ) {
 			return;
 		}
@@ -250,32 +293,35 @@ class FormReset {
 		$field_name    = isset( $_POST['field_name'] ) ? sanitize_text_field( wp_unslash( $_POST['field_name'] ) ) : '';
 		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
 		$field_type    = isset( $_POST['field_type'] ) ? sanitize_text_field( wp_unslash( $_POST['field_type'] ) ) : 'text';
-		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
-		$settings_name = isset( $_POST['settings_name'] ) ? sanitize_text_field( wp_unslash( $_POST['settings_name'] ) ) : '';
+		$settings_name = $this->wasp->get_settings_name();
+		$storage       = $this->wasp->get_storage();
 
-		if ( empty( $field_name ) || empty( $settings_name ) ) {
-			wp_send_json_error( [ 'message' => esc_html__( 'Field name and settings name are required.', 'wasp' ) ] );
+		if ( empty( $field_name ) ) {
+			wp_send_json_error( [ 'message' => esc_html__( 'Field name is required.', 'wasp' ) ] );
 			return;
 		}
 
-		// Resolve default value server-side (secure, no encoding issues).
-		$default_values = $this->wasp->get_default_values();
-		$default_value  = array_key_exists( $field_name, $default_values ) ? $default_values[ $field_name ] : null;
+		// Resolve the value server-side (secure, no encoding issues).
+		$reset_value = $this->reset_value( $field_name );
 
 		// Get current settings from database.
-		$current_settings = get_option( $settings_name, [] );
+		$current_settings = $storage->get( $settings_name, [] );
 		if ( ! is_array( $current_settings ) ) {
 			$current_settings = [];
 		}
 
-		// Reset to default: set if default exists, remove key otherwise.
-		if ( $default_value !== null ) {
-			$current_settings[ $field_name ] = $default_value;
+		// With a fallback layer, a reset removes the override so the field inherits again.
+		// Otherwise: set the default if one exists, remove the key if not.
+		$default_values = $this->wasp->get_default_values();
+
+		if ( ! $this->wasp->has_fallback() && array_key_exists( $field_name, $default_values ) && $default_values[ $field_name ] !== null ) {
+			$current_settings[ $field_name ] = $default_values[ $field_name ];
 		} else {
 			unset( $current_settings[ $field_name ] );
 		}
 
-		update_option( $settings_name, $current_settings );
+		$this->wasp->write_values( $current_settings );
+		$default_value = $reset_value;
 
 		wp_send_json_success(
 			[
@@ -293,15 +339,32 @@ class FormReset {
 	 * @since 2.3.3
 	 */
 	public function ajax_reset_all_fields() {
+		if ( ! $this->is_own_request() ) {
+			return;
+		}
+
 		if ( ! $this->validate_ajax_request() ) {
 			return;
 		}
 
-		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
-		$settings_name = isset( $_POST['settings_name'] ) ? sanitize_text_field( wp_unslash( $_POST['settings_name'] ) ) : $this->wasp->get_settings_name();
+		$settings_name = $this->wasp->get_settings_name();
+		$storage       = $this->wasp->get_storage();
+
+		// With a fallback layer, resetting everything means removing every override.
+		if ( $this->wasp->has_fallback() ) {
+			$this->wasp->write_values( [] );
+
+			wp_send_json_success(
+				[
+					'message' => esc_html__( 'All fields reset successfully.', 'wasp' ),
+					'values'  => $this->wasp->get_resolved_values(),
+				]
+			);
+			return;
+		}
 
 		// Get current settings from database (AJAX is stateless).
-		$current_settings = get_option( $settings_name, [] );
+		$current_settings = $storage->get( $settings_name, [] );
 		if ( ! is_array( $current_settings ) ) {
 			$current_settings = [];
 		}
@@ -320,7 +383,7 @@ class FormReset {
 			}
 		}
 
-		update_option( $settings_name, $current_settings );
+		$this->wasp->write_values( $current_settings );
 
 		wp_send_json_success(
 			[

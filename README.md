@@ -241,3 +241,61 @@ $conf = [
 	]
 ];
 ```
+
+# 3.1.0 features
+
+All new features are opt-in. Forms that don't use them behave exactly as before.
+
+## Network-wide settings (multisite)
+
+```php
+$form = new Wasp(
+	'prefix-network-page',
+	'prefix_options',
+	'plugindomain',
+	null,
+	[
+		'storage'    => 'network',                // get_site_option() / update_site_option()
+		'capability' => 'manage_network_options', // default for network storage
+	]
+);
+
+add_action( 'network_admin_menu', 'prefix_network_menu' ); // register the page in the network admin
+```
+
+On multisite the form posts to `network/edit.php?action=<page>` and is saved by Wasp
+(`network_admin_edit_<page>`, nonce and capability checked). On a single site it falls back
+to the normal `options.php` flow.
+
+## Default values from another layer, with per-field override
+
+Show values inherited from another layer (for example network defaults on a sub-site, or a
+global default on a single item) and save only the fields the user overrides.
+
+```php
+function config_func( $form ) {
+	$form->set_fallback_values(
+		get_site_option( 'prefix_options_settings', [] ), // the layer to inherit from
+		[
+			'locked'       => [ 'api_key' ],              // always inherited, cannot be overridden
+			'label'        => __( 'Override', 'plugindomain' ),
+			'source_label' => __( 'Network default', 'plugindomain' ),
+		]
+	);
+
+	$form->load_form( $conf ); // call set_fallback_values() before load_form()
+	$form->register();
+}
+```
+
+- Each field gets an "Override" toggle (template `Inherit`, so themes can restyle it).
+- Unchecked: the field shows the inherited value and nothing is stored for it.
+- Checked: the field's own value is stored, even an empty one.
+- Opt a field out with `'inherit' => false` in its config.
+- `$form->get_resolved_values()` returns defaults + fallback + own values merged.
+
+## Themes per form
+
+`$form->set_theme( __DIR__ . '/templates/my-theme' )` now accepts an absolute path (with or
+without `.wasp.php`) and applies to that form only. A theme only needs the templates it
+changes; missing types fall back to the default theme. Relative paths from 3.0 still work.

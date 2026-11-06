@@ -34,6 +34,14 @@ class Ajax {
 	 */
 	protected $loads;
 
+	/**
+	 * Capability required to run the AJAX loaders.
+	 *
+	 * @since 3.1.0
+	 * @var string
+	 */
+	protected $capability = 'manage_options';
+
 
 
 	/**
@@ -46,6 +54,22 @@ class Ajax {
 		$hook_name    = 'wp_ajax_wasp_' . self::ACTION_NAME;
 
 		\add_action( $hook_name, [ $this, 'ajax_loader_action' ] );
+	}
+
+
+
+
+	/**
+	 * Sets the capability required to run the AJAX loaders.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $capability Capability.
+	 */
+	public function set_capability( $capability ) {
+		if ( is_string( $capability ) && $capability !== '' ) {
+			$this->capability = $capability;
+		}
 	}
 
 
@@ -91,57 +115,60 @@ class Ajax {
 
 
 	/**
-	 * Admin Ajax response output function
+	 * Admin Ajax response output function.
+	 *
+	 * Since 3.1.0 the hook and parameters always come from the server-side field
+	 * configuration registered in this request (load_form() runs on admin_init,
+	 * before AJAX actions). The request may only name which fields to load.
+	 * Before 3.1.0 the hook name and parameters were taken from the request and
+	 * called directly, which let anyone holding the nonce call any PHP function.
 	 */
 	public function ajax_loader_action() {
-		$has_option_list = [ 'radio', 'select', 'multi_text_input', 'checkbox' ];
+		// Several forms register this action; answer only for this form's fields.
+		if ( empty( $this->loads ) || ! is_array( $this->loads ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only the keys are used, and only to look up server-side config.
+		$requested = ( isset( $_REQUEST['fields'] ) && is_array( $_REQUEST['fields'] ) ) ? array_keys( $_REQUEST['fields'] ) : [];
+		$keys      = array_values( array_intersect( array_map( 'strval', $requested ), array_map( 'strval', array_keys( $this->loads ) ) ) );
+
+		if ( empty( $keys ) ) {
+			return;
+		}
 
 		$nonce = isset( $_REQUEST['nonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['nonce'] ) ) : '';
-		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Complex array, processed in loop.
-		$fields = isset( $_REQUEST['fields'] ) ? wp_unslash( $_REQUEST['fields'] ) : [];
 
-		if ( \wp_verify_nonce( $nonce, 'wasp_ajax_loader_action' ) ) {
-			$result_json = [];
+		if ( ! \wp_verify_nonce( $nonce, 'wasp_ajax_loader_action' ) || ! \current_user_can( $this->capability ) ) {
+			\wp_die( '', '', [ 'response' => 403 ] );
+		}
 
-			foreach ( $fields as $key => $field ) {
-				$hook        = stripslashes( $field['hook'] );
-				$hook_exp    = explode( '::', $hook );
-				$class_name  = $hook_exp[0];
-				$method_name = $hook_exp[1];
-				$params      = isset( $field['params'] ) ? $field['params'] : [];
-				$field_type  = $field['field']['type'];
+		$has_option_list = [ 'radio', 'select', 'multi_text_input', 'checkbox' ];
+		$result_json     = [];
 
-				if ( empty( $params ) || ! is_array( $params ) ) {
-					$params = [];
-				}
+		foreach ( $keys as $key ) {
+			$conf       = $this->loads[ $key ];
+			$hook       = isset( $conf['hook'] ) ? $conf['hook'] : null;
+			$params     = ( isset( $conf['params'] ) && is_array( $conf['params'] ) ) ? array_values( $conf['params'] ) : [];
+			$field      = isset( $conf['field'] ) && is_array( $conf['field'] ) ? $conf['field'] : [];
+			$field_type = isset( $field['type'] ) ? $field['type'] : '';
 
-				if ( ! method_exists( $class_name, $method_name ) ) {
-					echo esc_html( $hook ) . ' not found!';
-				}
+			$func_result = is_callable( $hook ) ? call_user_func_array( $hook, $params ) : false;
 
-				$func_result = call_user_func_array( $hook, $params );
-
-				$not_found_text = 'not found!!!!!';
-
-				if ( $func_result === false ) {
-					$field['field']['not_found'] = $not_found_text;
-				} elseif ( $field_type === 'text_input' ) {
-					$field['field']['value'] = $func_result;
-				} elseif ( $field_type === 'textarea' ) {
-					$field['field']['text'] = $func_result;
-				} elseif ( in_array( $field_type, $has_option_list, true ) ) {
-					if ( is_array( $func_result ) ) {
-						$field['field']['options'] = $func_result;
-					}
-				}
-
-				$result = Fields::prepare( $field['field'] );
-
-				$result_json[ $key ]['value'] = $result;
+			if ( $func_result === false ) {
+				$field['not_found'] = \esc_html__( 'Data could not be loaded.', 'wasp' );
+			} elseif ( $field_type === 'text_input' ) {
+				$field['value'] = $func_result;
+			} elseif ( $field_type === 'textarea' ) {
+				$field['text'] = $func_result;
+			} elseif ( in_array( $field_type, $has_option_list, true ) && is_array( $func_result ) ) {
+				$field['options'] = $func_result;
 			}
 
-			echo wp_json_encode( $result_json );
+			$result_json[ $key ]['value'] = Fields::prepare( $field );
 		}
+
+		echo \wp_json_encode( $result_json );
 
 		\wp_die();
 	}

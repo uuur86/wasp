@@ -89,7 +89,8 @@ abstract class FieldCreator {
 		];
 		$type     = isset( $type_map[ strtolower( $type_name ) ] ) ? $type_map[ strtolower( $type_name ) ] : $type_name;
 
-		$template = Templates::get( $type );
+		$theme    = isset( $args['theme'] ) ? $args['theme'] : null;
+		$template = Templates::get( $type, $theme );
 
 		if ( empty( $template ) ) {
 			return false;

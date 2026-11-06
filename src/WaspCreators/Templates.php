@@ -13,25 +13,30 @@ namespace WaspCreators;
 class Templates {
 
 	/**
-	 * Template file path.
+	 * Template path set with set(). Used when a field does not name its own theme.
 	 *
-	 * @var string
+	 * @var string|null
 	 */
 	protected static $path = null;
 
 	/**
-	 * Template array.
+	 * Loaded template sets, keyed by resolved file path.
 	 *
+	 * @since 3.1.0
 	 * @var array
 	 */
-	protected static $templates = null;
+	protected static $sets = [];
 
 
 
 	/**
-	 * Set template file path.
+	 * Sets the global template path.
 	 *
-	 * @param string $path Template file path.
+	 * Kept for backward compatibility. Prefer Wasp::set_theme(), which applies the
+	 * theme only to that form, so two forms on the same request can use different
+	 * themes.
+	 *
+	 * @param string $path Template file path (absolute, or relative to the folder that contains vendor/).
 	 * @return bool Always returns false.
 	 */
 	public static function set( $path = null ) {
@@ -45,40 +50,110 @@ class Templates {
 
 
 	/**
-	 * Get template by type.
+	 * Resolves a theme path to a template file.
 	 *
-	 * @param string $type Template type.
-	 * @return object|bool Template object or false if not found.
+	 * Accepted forms:
+	 * - null: the bundled default theme.
+	 * - An absolute path to a "*.wasp.php" file, with or without the ".wasp.php" suffix.
+	 * - Legacy (before 3.1.0): a path relative to the folder that contains vendor/,
+	 *   without the ".wasp.php" suffix.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string|null $path Theme path.
+	 * @return string|false Resolved file path, or false if it does not exist.
 	 */
-	public static function get( $type ) {
-		if ( empty( self::$templates ) ) {
-			$ds = DIRECTORY_SEPARATOR;
+	public static function resolve( $path = null ) {
+		if ( empty( $path ) ) {
+			$file = dirname( __DIR__, 2 ) . '/templates/default.wasp.php';
 
-			if ( empty( self::$path ) ) {
-				$temp_file = dirname( __DIR__, 2 ) . '/templates/default';
-			} else {
-				$temp_file = dirname( __DIR__, 4 ) . self::$path;
-			}
-
-			// Windows slash compatibility and security.
-			$temp_file = strtr(
-				$temp_file,
-				[
-					'/'   => $ds,
-					'../' => '',
-				]
-			);
-			$temp_file .= '.wasp.php';
-
-			if ( ! file_exists( $temp_file ) ) {
-				return false;
-			}
-
-			self::$templates = include $temp_file;
+			return is_file( $file ) ? $file : false;
 		}
 
-		if ( isset( self::$templates[ $type ] ) ) {
-			return (object) self::$templates[ $type ];
+		$path = (string) $path;
+		$file = self::with_suffix( $path );
+
+		// Absolute path.
+		if ( is_file( $file ) ) {
+			$real = realpath( $file );
+
+			return ( false !== $real ) ? $real : $file;
+		}
+
+		// Legacy relative path. Strip traversal segments before resolving.
+		$relative = str_replace( [ '../', '..\\' ], '', $path );
+		$file     = self::with_suffix( dirname( __DIR__, 4 ) . '/' . ltrim( $relative, '/\\' ) );
+		$file     = strtr( $file, [ '/' => DIRECTORY_SEPARATOR ] );
+
+		return is_file( $file ) ? $file : false;
+	}
+
+
+
+	/**
+	 * Appends the ".wasp.php" suffix when it is missing.
+	 *
+	 * @param string $path File path.
+	 * @return string
+	 */
+	protected static function with_suffix( $path ) {
+		if ( substr( $path, -9 ) === '.wasp.php' ) {
+			return $path;
+		}
+
+		return $path . '.wasp.php';
+	}
+
+
+
+	/**
+	 * Loads a template set once per request.
+	 *
+	 * @param string|false $file Resolved template file.
+	 * @return array
+	 */
+	protected static function load( $file ) {
+		if ( empty( $file ) ) {
+			return [];
+		}
+
+		if ( ! array_key_exists( $file, self::$sets ) ) {
+			$set                 = include $file;
+			self::$sets[ $file ] = is_array( $set ) ? $set : [];
+		}
+
+		return self::$sets[ $file ];
+	}
+
+
+
+	/**
+	 * Gets a template by type.
+	 *
+	 * A custom theme only needs to define the templates it changes: every type it
+	 * leaves out falls back to the bundled default theme.
+	 *
+	 * @param string      $type  Template type, e.g. "Text" or "Radio".
+	 * @param string|null $theme Optional theme path for this field. Defaults to the path set with set().
+	 * @return object|bool Template object or false if not found.
+	 */
+	public static function get( $type, $theme = null ) {
+		if ( empty( $theme ) ) {
+			$theme = self::$path;
+		}
+
+		if ( ! empty( $theme ) ) {
+			$custom = self::load( self::resolve( $theme ) );
+
+			if ( isset( $custom[ $type ] ) && is_array( $custom[ $type ] ) ) {
+				return (object) $custom[ $type ];
+			}
+		}
+
+		$default = self::load( self::resolve( null ) );
+
+		if ( isset( $default[ $type ] ) && is_array( $default[ $type ] ) ) {
+			return (object) $default[ $type ];
 		}
 
 		return false;

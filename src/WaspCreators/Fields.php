@@ -126,8 +126,11 @@ class Fields {
 			return;
 		}
 
+		$inherit = isset( $args['inherit'] ) && is_array( $args['inherit'] ) ? $args['inherit'] : null;
+		$theme   = isset( $args['theme'] ) ? $args['theme'] : null;
+
 		// Flushes unnecessary array data from ram.
-		unset( $args['html_before'], $args['html_after'], $args['type'] );
+		unset( $args['html_before'], $args['html_after'], $args['type'], $args['inherit'] );
 
 		$html = call_user_func( $obj_name . '::get', $args );
 
@@ -135,7 +138,113 @@ class Fields {
 			return;
 		}
 
-		return self::filter_output( $html, $before, $after );
+		$output = self::filter_output( $html, $before, $after );
+
+		if ( null !== $inherit ) {
+			$output = self::wrap_inherit( $output, $inherit, $theme );
+		}
+
+		return $output;
+	}
+
+
+
+	/**
+	 * Wraps a rendered field with the inherit control.
+	 *
+	 * The control markup comes from the "Inherit" template, so themes can restyle it.
+	 * All dynamic values are escaped by Templates::append().
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string      $output  Rendered field HTML.
+	 * @param array       $inherit Inherit data prepared by Wasp::add().
+	 * @param string|null $theme   Theme path.
+	 * @return string
+	 */
+	protected static function wrap_inherit( $output, array $inherit, $theme = null ) {
+		$template = Templates::get( 'Inherit', $theme );
+
+		if ( empty( $template ) || empty( $template->main ) ) {
+			return $output;
+		}
+
+		$locked     = ! empty( $inherit['locked'] );
+		$overridden = ! $locked && ! empty( $inherit['overridden'] );
+		$state      = $locked ? 'locked' : ( $overridden ? 'overridden' : 'inherited' );
+
+		$control = Templates::append(
+			$template->main,
+			[
+				'id'           => isset( $inherit['id'] ) ? $inherit['id'] : '',
+				'name'         => isset( $inherit['name'] ) ? $inherit['name'] : '',
+				'checked'      => $overridden ? ' checked="checked"' : '',
+				'disabled'     => $locked ? ' disabled="disabled"' : '',
+				'label'        => $locked && isset( $inherit['locked_label'] ) ? $inherit['locked_label'] : ( isset( $inherit['label'] ) ? $inherit['label'] : '' ),
+				'source_label' => isset( $inherit['source_label'] ) ? $inherit['source_label'] : '',
+				'inherited'    => self::display_value( isset( $inherit['value'] ) ? $inherit['value'] : null, isset( $inherit['empty_label'] ) ? $inherit['empty_label'] : '' ),
+				'state'        => $state,
+			]
+		);
+
+		return '<div class="wasp-inheritable" data-wasp-state="' . \esc_attr( $state ) . '">'
+			. $control
+			. '<div class="wasp-inheritable-field">' . $output . '</div>'
+			. '</div>';
+	}
+
+
+
+	/**
+	 * Turns a stored value into a short, single-line string for display.
+	 *
+	 * Arrays (checkbox groups) are joined, and long values are cut to keep the
+	 * page small.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param mixed  $value       Value.
+	 * @param string $empty_label Text shown for empty values.
+	 * @return string
+	 */
+	public static function display_value( $value, $empty_label = '' ) {
+		$max_length = 200;
+
+		if ( is_array( $value ) ) {
+			$parts = [];
+
+			foreach ( $value as $item ) {
+				if ( is_scalar( $item ) && (string) $item !== '' ) {
+					$parts[] = (string) $item;
+				}
+
+				if ( count( $parts ) >= 20 ) {
+					break;
+				}
+			}
+
+			$value = implode( ', ', $parts );
+		} elseif ( is_bool( $value ) ) {
+			$value = $value ? '1' : '0';
+		} elseif ( ! is_scalar( $value ) ) {
+			$value = '';
+		}
+
+		$value = trim( str_replace( [ "\r\n", "\n", "\r", '|' ], ', ', (string) $value ) );
+
+		if ( $value === '' ) {
+			return (string) $empty_label;
+		}
+
+		if ( function_exists( 'mb_strlen' ) && mb_strlen( $value ) > $max_length ) {
+			return mb_substr( $value, 0, $max_length ) . '…';
+		}
+
+		if ( strlen( $value ) > $max_length ) {
+			return substr( $value, 0, $max_length ) . '…';
+		}
+
+		return $value;
 	}
 
 

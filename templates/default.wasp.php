@@ -49,6 +49,17 @@ return [
 			<label for="[id]">[label]</label>
 		</span>',
 	],
+	// Since 3.1.0: control shown next to a field whose value can be inherited
+	// from a fallback layer (see Wasp::set_fallback_values()).
+	'Inherit' => [
+		'main' => '<div class="wasp-inherit" data-wasp-inherit="[state]">
+					<label class="wasp-inherit-toggle" for="[id]">
+						<input type="checkbox" class="wasp-inherit-checkbox" name="[name]" id="[id]" value="1" [checked][disabled]/>
+						<span>[label]</span>
+					</label>
+					<span class="wasp-inherit-source">[source_label]: <code>[inherited]</code></span>
+				</div>',
+	],
 	'Taginput' => [
 		'main' => '<div class="taginput-input-row">
 					<input type="text" class="taginput-input" placeholder="[placeholder]" />
@@ -59,4 +70,4 @@ return [
 				<div class="taginput-error"></div>
 				<div class="taginput-presets">[presets]</div>',
 	]
-];
+];
