@@ -85,7 +85,9 @@ abstract class FieldCreator {
 
 		// Map lowercase type to proper template name.
 		$type_map = [
-			'taginput' => 'Taginput',
+			'taginput'      => 'Taginput',
+			// TaginputRegex has no template of its own; it reuses Taginput.
+			'taginputregex' => 'Taginput',
 		];
 		$type     = isset( $type_map[ strtolower( $type_name ) ] ) ? $type_map[ strtolower( $type_name ) ] : $type_name;
 

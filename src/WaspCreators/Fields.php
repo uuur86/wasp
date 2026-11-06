@@ -23,40 +23,40 @@ class Fields {
 	public static function filter_output( $html, $before = null, $after = null ) {
 		$output = '';
 
-		$default_attr   = [
-			'id'    => [],
-			'name'  => [],
-			'href'  => [],
-			'src'   => [],
-			'type'  => [],
-			'class' => [],
-			'style' => [],
-			'data-field' => [],
-			'data-nonce' => [],
-			'data-confirm' => [],
+		$default_attr = [
+			'id'                 => [],
+			'name'               => [],
+			'href'               => [],
+			'src'                => [],
+			'type'               => [],
+			'class'              => [],
+			'style'              => [],
+			'data-field'         => [],
+			'data-nonce'         => [],
+			'data-confirm'       => [],
 			'data-initial-value' => [],
 			'data-settings-name' => [],
-			'data-field-type' => [],
-			'data-action' => [],
-			'data-preset' => [],
-			'title' => [],
+			'data-field-type'    => [],
+			'data-action'        => [],
+			'data-preset'        => [],
+			'title'              => [],
 		];
 
-		$allowed_tags   = [
-			'input'     => $default_attr,
-			'select'    => $default_attr,
-			'option'    => $default_attr,
-			'radio'     => $default_attr,
-			'a'         => $default_attr,
-			'img'       => $default_attr,
-			'br'        => $default_attr,
-			'div'       => $default_attr,
-			'hr'        => $default_attr,
-			'span'      => $default_attr,
-			'button'    => $default_attr,
-			'fieldset'  => $default_attr,
-			'label'     => $default_attr,
-			'textarea'  => $default_attr,
+		$allowed_tags = [
+			'input'    => $default_attr,
+			'select'   => $default_attr,
+			'option'   => $default_attr,
+			'radio'    => $default_attr,
+			'a'        => $default_attr,
+			'img'      => $default_attr,
+			'br'       => $default_attr,
+			'div'      => $default_attr,
+			'hr'       => $default_attr,
+			'span'     => $default_attr,
+			'button'   => $default_attr,
+			'fieldset' => $default_attr,
+			'label'    => $default_attr,
+			'textarea' => $default_attr,
 		];
 
 		if ( ! empty( $before ) ) {
@@ -112,6 +112,7 @@ class Fields {
 			'multi_text_input' => 'Multitext',
 			'file_input'       => 'File',
 			'taginput'         => 'Taginput',
+			'taginput_regex'   => 'TaginputRegex',
 		];
 
 		if ( isset( $type_arr[ $type ] ) ) {

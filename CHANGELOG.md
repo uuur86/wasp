@@ -26,4 +26,6 @@
 - A section with `before`/`after` HTML lost its title and description (the section data was replaced by
   the HTML string). `$current_section` is documented as an array (fixes the IDE type error).
 - First save of a form whose option did not exist yet could fatal on PHP 8 (`array + null`).
+- `taginput_regex` fields rendered nothing: the type was not mapped to `TaginputRegex`, and that class
+  had no template. It now uses the `Taginput` template.
 - Test bootstrap defines `ABSPATH` so the classes load under PHPUnit.
