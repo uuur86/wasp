@@ -89,8 +89,10 @@
 
 			// Handle different field types.
 			switch (fieldType) {
-				case 'checkbox':
 				case 'radio':
+					this.updateRadio($field, value);
+					break;
+				case 'checkbox':
 					this.updateCheckboxRadio($field, value);
 					break;
 				case 'taginput':
@@ -99,6 +101,16 @@
 				default:
 					this.updateTextField($field, value);
 			}
+		},
+
+		// A radio group shares one name: check the option whose value matches.
+		updateRadio: function ($field, value) {
+			var wanted = (value === null || value === undefined) ? '' : String(value);
+
+			$field.each(function () {
+				this.checked = (this.value === wanted);
+			});
+			$field.filter(':checked').trigger('change');
 		},
 
 		updateCheckboxRadio: function ($field, value) {

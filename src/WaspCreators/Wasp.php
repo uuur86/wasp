@@ -347,6 +347,14 @@ class Wasp {
 	const OVERRIDE_KEY = '__wasp_override';
 
 	/**
+	 * Public URL of the wasp directory, set by the consuming plugin (see set_assets_url()).
+	 *
+	 * @since 3.1.0
+	 * @var string|null
+	 */
+	protected static $assets_base_url = null;
+
+	/**
 	 * True while write_values() stores values that must not go through the form middleware.
 	 *
 	 * @since 3.1.0
@@ -1350,8 +1358,27 @@ class Wasp {
 		$dropped = [];
 
 		if ( $this->has_fallback() && $is_form_submit ) {
+			$auto = ! empty( $this->fallback_args['auto_override'] );
+
 			foreach ( $this->inherit_keys as $key ) {
-				if ( $this->is_locked( $key ) || ! in_array( (string) $key, $overrides, true ) ) {
+				if ( $this->is_locked( $key ) ) {
+					unset( $inputs[ $key ] );
+					$dropped[ $key ] = true;
+					continue;
+				}
+
+				$overridden = in_array( (string) $key, $overrides, true );
+
+				// Auto override does not depend on the script: a value that differs from the
+				// inherited one is an override even when the toggle was not switched on.
+				if ( $auto ) {
+					$overridden = self::differs_from_inherited(
+						array_key_exists( $key, $inputs ) ? $inputs[ $key ] : '',
+						$this->inherited_value( $key )
+					);
+				}
+
+				if ( ! $overridden ) {
 					unset( $inputs[ $key ] );
 					$dropped[ $key ] = true;
 				}
@@ -2235,10 +2262,124 @@ class Wasp {
 	 * @since 3.1.0
 	 */
 	protected function enqueue_inherit_assets() {
-		$base_file = dirname( __DIR__, 2 ) . '/wasp.php';
+		\wp_enqueue_script( 'wasp-inherit', self::asset_url( 'assets/js/wasp-inherit.js' ), [], self::VERSION, true );
+		\wp_enqueue_style( 'wasp-inherit', self::asset_url( 'assets/css/wasp-inherit.css' ), [], self::VERSION );
+	}
 
-		\wp_enqueue_script( 'wasp-inherit', \plugins_url( 'assets/js/wasp-inherit.js', $base_file ), [], self::VERSION, true );
-		\wp_enqueue_style( 'wasp-inherit', \plugins_url( 'assets/css/wasp-inherit.css', $base_file ), [], self::VERSION );
+
+
+	/**
+	 * Value a field inherits: the fallback value, or its default when the fallback has none.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $key Field name.
+	 * @return mixed
+	 */
+	protected function inherited_value( $key ) {
+		if ( is_array( $this->fallback_values ) && array_key_exists( $key, $this->fallback_values ) ) {
+			return $this->fallback_values[ $key ];
+		}
+
+		return isset( $this->default_values[ $key ] ) ? $this->default_values[ $key ] : null;
+	}
+
+
+
+	/**
+	 * Whether a submitted value differs from the inherited one.
+	 *
+	 * Compared the same way as wasp-inherit.js does: lists are order-insensitive, line
+	 * breaks and "|" separate items, surrounding whitespace is ignored, and an empty value
+	 * equals "0" (an unchecked single checkbox).
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param mixed $submitted Submitted value.
+	 * @param mixed $inherited Inherited value.
+	 * @return bool
+	 */
+	public static function differs_from_inherited( $submitted, $inherited ) {
+		$a = self::comparable( $submitted );
+		$b = self::comparable( $inherited );
+
+		if ( ( '' === $a && '0' === $b ) || ( '0' === $a && '' === $b ) ) {
+			return false;
+		}
+
+		return $a !== $b;
+	}
+
+
+
+	/**
+	 * Normalizes a value for differs_from_inherited().
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param mixed $value Value.
+	 * @return string
+	 */
+	protected static function comparable( $value ) {
+		if ( null === $value || false === $value ) {
+			return '';
+		}
+
+		if ( true === $value ) {
+			return '1';
+		}
+
+		if ( is_array( $value ) ) {
+			$items = array_map( 'strval', array_filter( $value, 'is_scalar' ) );
+		} elseif ( is_scalar( $value ) ) {
+			$items = preg_split( '/[\r\n|]+/', (string) $value );
+		} else {
+			return '';
+		}
+
+		$items = array_values( array_filter( array_map( 'trim', (array) $items ), 'strlen' ) );
+		sort( $items, SORT_STRING );
+
+		return implode( "\n", $items );
+	}
+
+
+
+	/**
+	 * Sets the public URL of the wasp directory (the folder that holds assets/).
+	 *
+	 * Needed when wasp is not reachable through plugins_url(), for example when the
+	 * vendor folder is a symlink or a junction to a shared copy of the library.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $url URL of the wasp directory, e.g. plugin_dir_url( __FILE__ ) . 'vendor/uuur86/wasp/'.
+	 * @return void
+	 */
+	public static function set_assets_url( $url ) {
+		$url = (string) $url;
+
+		self::$assets_base_url = ( '' === $url ) ? null : rtrim( $url, '/' ) . '/';
+	}
+
+
+
+	/**
+	 * Returns the public URL of a file inside the wasp directory.
+	 *
+	 * @since 3.1.0
+	 *
+	 * @param string $path Path relative to the wasp directory, e.g. "assets/js/wasp-inherit.js".
+	 * @return string
+	 */
+	public static function asset_url( $path ) {
+		$path = ltrim( (string) $path, '/' );
+
+		if ( null !== self::$assets_base_url ) {
+			return self::$assets_base_url . $path;
+		}
+
+		return \plugins_url( $path, dirname( __DIR__, 2 ) . '/wasp.php' );
 	}
 
 

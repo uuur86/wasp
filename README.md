@@ -295,6 +295,8 @@ function config_func( $form ) {
 - `'auto_override' => true` keeps fields editable: changing a value turns its override on, and
   getting back to the inherited value turns it off. A theme can add a revert control: any element
   with `data-wasp-inherit-revert` inside the `Inherit` template (label: `[revert_label]`).
+- Saving does not depend on the script: with `auto_override` the server stores every value that differs
+  from the inherited one.
 - Fields with options show the option label of the inherited value ("Yes", not "1").
 - `$form->get_resolved_values()` returns defaults + fallback + own values merged.
 
@@ -303,3 +305,12 @@ function config_func( $form ) {
 `$form->set_theme( __DIR__ . '/templates/my-theme' )` now accepts an absolute path (with or
 without `.wasp.php`) and applies to that form only. A theme only needs the templates it
 changes; missing types fall back to the default theme. Relative paths from 3.0 still work.
+
+## Asset URLs
+
+wasp serves a few scripts and styles from its own `assets/` folder. If the library is not reachable through
+`plugins_url()` (for example a symlinked or shared vendor folder), tell it where it is served from:
+
+```php
+\WaspCreators\Wasp::set_assets_url( plugin_dir_url( __FILE__ ) . 'vendor/uuur86/wasp/' );
+```

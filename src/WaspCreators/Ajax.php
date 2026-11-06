@@ -99,7 +99,7 @@ class Ajax {
 		$handle_name = $this->domain . '_wasp_ajax_loader';
 
 		// Enqueued script with localized data.
-		\wp_enqueue_script( $handle_name, \plugin_dir_url( __FILE__ ) . '../../assets/js/ajax-loader.js', [ 'jquery' ], '1.0.4', true );
+		\wp_enqueue_script( $handle_name, Wasp::asset_url( 'assets/js/ajax-loader.js' ), [ 'jquery' ], '1.0.4', true );
 
 		// Localize the script with new data.
 		$values = array(

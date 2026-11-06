@@ -99,20 +99,10 @@ class FormReset {
 
 		$enqueued = true;
 
-		// Calculate URL from wasp directory (vendor/uuur86/wasp/src/WaspCreators/Wasp.php).
-		$wasp_base = dirname( __DIR__, 2 ); // vendor/uuur86/wasp.
-
-		// Convert to web accessible URL using WordPress functions.
-		$wasp_base = str_replace( DIRECTORY_SEPARATOR, '/', $wasp_base );
-
-		// Remove ABSPATH from the path to get relative path from content directory.
-		// phpcs:ignore
-		$abspath       = str_replace( DIRECTORY_SEPARATOR, '/', ABSPATH );
-		$relative_path = str_replace( $abspath, '', $wasp_base );
-		$base_url      = '/' . ltrim( $relative_path, '/' ) . '/';
-
-		$script_url = $base_url . 'assets/js/wasp-reset.js';
-		$style_url  = $base_url . 'assets/css/wasp-reset.css';
+		// The URL used to be derived from ABSPATH, which broke when wasp lives outside the
+		// WordPress folder (symlinked vendor directories). See Wasp::asset_url().
+		$script_url = Wasp::asset_url( 'assets/js/wasp-reset.js' );
+		$style_url  = Wasp::asset_url( 'assets/css/wasp-reset.css' );
 
 		$nonce = wp_create_nonce( $this->reset_nonce_action );
 

@@ -14,6 +14,9 @@
 - Fallback layer: `auto_override` option. Inheritable fields stay editable; editing a field turns its
   override on, getting back to the inherited value turns it off. Themes can add a revert control with
   `data-wasp-inherit-revert` and the `[revert_label]` placeholder (`revert_label` option).
+- `Wasp::set_assets_url()` / `Wasp::asset_url()`: where wasp's scripts and styles are served from. Auto override
+  is also decided on the server (a value that differs from the inherited one is stored), so saving works
+  even when the script does not load.
 - The inherit control shows option labels ("Yes") instead of stored values ("1"); `Fields::option_labels()`.
 
 ### Fixed
@@ -32,4 +35,6 @@
 - First save of a form whose option did not exist yet could fatal on PHP 8 (`array + null`).
 - `taginput_regex` fields rendered nothing: the type was not mapped to `TaginputRegex`, and that class
   had no template. It now uses the `Taginput` template.
+- Reset, inherit and AJAX loader assets got wrong URLs (404) when wasp lives outside the WordPress folder,
+  for example in a symlinked vendor directory.
 - Test bootstrap defines `ABSPATH` so the classes load under PHPUnit.

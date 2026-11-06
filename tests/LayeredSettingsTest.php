@@ -375,4 +375,79 @@ class LayeredSettingsTest extends BaseTestCase {
 		$this->assertSame( 'raw', Fields::option_labels( 'raw', $options ) );
 		$this->assertSame( 'raw', Fields::option_labels( 'raw', null ) );
 	}
+
+	/**
+	 * Auto override stores changed values even when the script did not switch the toggle on.
+	 */
+	public function test_auto_override_saves_changed_values_without_toggle() {
+		$wasp = new Wasp( 'page', 'site', 'wasp' );
+		$wasp->set_fallback_values(
+			[
+				'title' => 'network',
+				'mode'  => 'a',
+			],
+			[ 'auto_override' => true ]
+		);
+		$wasp->load_form( $this->conf() );
+
+		$saved = $wasp->settings_input_middleware(
+			[
+				'mode'             => 'b',
+				'title'            => 'network',
+				Wasp::OVERRIDE_KEY => [ Wasp::OVERRIDE_KEY => '1' ],
+			]
+		);
+
+		$this->assertSame( 'b', $saved['mode'] );
+		$this->assertArrayNotHasKey( 'title', $saved, 'A value equal to the inherited one is not stored.' );
+	}
+
+	/**
+	 * Auto override never stores locked fields.
+	 */
+	public function test_auto_override_keeps_locked_fields_out() {
+		$wasp = new Wasp( 'page', 'site', 'wasp' );
+		$wasp->set_fallback_values(
+			[ 'title' => 'network' ],
+			[
+				'locked'        => [ 'title' ],
+				'auto_override' => true,
+			]
+		);
+		$wasp->load_form( $this->conf() );
+
+		$saved = $wasp->settings_input_middleware(
+			[
+				'title'            => 'changed',
+				Wasp::OVERRIDE_KEY => [ Wasp::OVERRIDE_KEY => '1' ],
+			]
+		);
+
+		$this->assertArrayNotHasKey( 'title', $saved );
+	}
+
+	/**
+	 * Values are compared like the script compares them.
+	 */
+	public function test_differs_from_inherited() {
+		$this->assertFalse( Wasp::differs_from_inherited( 'a|b', "b\na" ) );
+		$this->assertFalse( Wasp::differs_from_inherited( '', '0' ) );
+		$this->assertFalse( Wasp::differs_from_inherited( '10', 10 ) );
+		$this->assertFalse( Wasp::differs_from_inherited( [ 'x', 'y' ], [ 'y', 'x' ] ) );
+		$this->assertTrue( Wasp::differs_from_inherited( '1', '0' ) );
+		$this->assertTrue( Wasp::differs_from_inherited( 'a', 'a|b' ) );
+	}
+
+	/**
+	 * Asset URLs follow the URL set by the consuming plugin.
+	 */
+	public function test_asset_url_uses_the_configured_base() {
+		Wasp::set_assets_url( 'https://example.org/wp-content/plugins/demo/vendor/uuur86/wasp' );
+
+		$url = Wasp::asset_url( '/assets/js/wasp-inherit.js' );
+
+		Wasp::set_assets_url( '' );
+
+		$this->assertSame( 'https://example.org/wp-content/plugins/demo/vendor/uuur86/wasp/assets/js/wasp-inherit.js', $url );
+	}
 }
