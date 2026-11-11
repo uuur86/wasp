@@ -21,6 +21,7 @@ class WaspTest extends BaseTestCase {
 	 * @return void
 	 */
 	protected function setUp(): void {
+
 		parent::setUp();
 
 		// Mock options functions used in Wasp constructor.
@@ -30,6 +31,7 @@ class WaspTest extends BaseTestCase {
 		global $pagenow;
 		// phpcs:ignore
 		$pagenow = 'admin.php';
+
 	}
 
 	/**
@@ -38,6 +40,7 @@ class WaspTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_get_form_data_from_get() {
+
 		$wasp = new Wasp( 'my-page', 'my_settings', 'wasp' );
 
 		$_GET['my_field'] = 'test_value';
@@ -45,6 +48,7 @@ class WaspTest extends BaseTestCase {
 		$result = $wasp->get_form_data( 'my_field' );
 
 		$this->assertEquals( 'test_value', $result );
+
 	}
 
 	/**
@@ -53,6 +57,7 @@ class WaspTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_get_form_data_from_post() {
+
 		$wasp = new Wasp( 'my-page', 'my_settings', 'wasp' );
 
 		$_POST['__get__my_field'] = 'test_value_post';
@@ -60,6 +65,7 @@ class WaspTest extends BaseTestCase {
 		$result = $wasp->get_form_data( 'my_field' );
 
 		$this->assertEquals( 'test_value_post', $result );
+
 	}
 
 	/**
@@ -68,11 +74,13 @@ class WaspTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_get_form_data_not_found() {
+
 		$wasp = new Wasp( 'my-page', 'my_settings', 'wasp' );
 
 		$result = $wasp->get_form_data( 'non_existent_field' );
 
 		$this->assertNull( $result );
+
 	}
 
 	/**
@@ -81,8 +89,10 @@ class WaspTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_get_rows_returns_null_when_not_array() {
+
 		$wasp = new Wasp( 'my-page', 'my_settings', 'wasp' );
 		$this->assertNull( $wasp->get_rows() );
+
 	}
 
 	/**
@@ -91,14 +101,18 @@ class WaspTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_route_generates_script() {
+
 		Monkey\Functions\when( 'admin_url' )->returnArg( 1 );
 
 		$wasp = new Wasp( 'my-page', 'my_settings', 'wasp' );
 
 		ob_start();
+
 		$wasp->route( '?page=test_route' );
 		$output = ob_get_clean();
 
 		$this->assertTrue( true );
+
 	}
+
 }

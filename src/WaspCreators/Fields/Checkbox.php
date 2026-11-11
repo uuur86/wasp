@@ -42,4 +42,5 @@ class Checkbox extends FieldCreator {
 			'checked' => 'checked',
 		],
 	];
+
 }

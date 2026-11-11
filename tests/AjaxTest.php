@@ -22,6 +22,7 @@ class AjaxTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_constructor_hooks() {
+
 		Monkey\Functions\expect( 'add_action' )
 			->once()
 			->with( 'wp_ajax_wasp_ajax_loader_action', \Mockery::type( 'array' ) );
@@ -29,6 +30,7 @@ class AjaxTest extends BaseTestCase {
 		$ajax = new Ajax( 'my-domain' );
 
 		$this->assertInstanceOf( Ajax::class, $ajax );
+
 	}
 
 	/**
@@ -37,6 +39,7 @@ class AjaxTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_load_handler() {
+
 		$ajax = new Ajax( 'my-domain' );
 
 		Monkey\Functions\expect( 'add_action' )
@@ -46,5 +49,7 @@ class AjaxTest extends BaseTestCase {
 		$ajax->load_handler( [ 'my_load' ] );
 
 		$this->assertTrue( true );
+
 	}
+
 }

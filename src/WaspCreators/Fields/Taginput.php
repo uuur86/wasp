@@ -39,4 +39,5 @@ class Taginput extends FieldCreator {
 		'presets'    => 'presets',
 		'field_type' => 'field_type',
 	];
+
 }

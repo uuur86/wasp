@@ -37,4 +37,5 @@ class Onecheckbox extends FieldCreator {
 		'option'  => 'option',
 		'checked' => 'checked',
 	];
+
 }

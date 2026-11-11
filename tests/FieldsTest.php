@@ -22,6 +22,7 @@ class FieldsTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_all_field_types() {
+
 		$types = [
 			'text_input',
 			'multi_text_input',
@@ -38,31 +39,50 @@ class FieldsTest extends BaseTestCase {
 		// Mock checked() and selected() to return strings.
 		Monkey\Functions\when( 'checked' )->alias(
 			function ( $checked, $current, $is_echo = true ) {
+
 				if ( $checked === $current ) {
+
 					if ( $is_echo ) {
+
 						echo ' checked="checked"';
+
 						return;
+
 					}
+
 					return ' checked="checked"';
+
 				}
+
 				return '';
+
 			}
 		);
 
 		Monkey\Functions\when( 'selected' )->alias(
 			function ( $selected, $current, $is_echo = true ) {
+
 				if ( $selected === $current ) {
+
 					if ( $is_echo ) {
+
 						echo ' selected="selected"';
+
 						return;
+
 					}
+
 					return ' selected="selected"';
+
 				}
+
 				return '';
+
 			}
 		);
 
 		foreach ( $types as $type ) {
+
 			$args = [
 				'type'        => $type,
 				'id'          => 'test_id',
@@ -93,7 +113,9 @@ class FieldsTest extends BaseTestCase {
 			$this->assertStringContainsString( '<div class="before">', $html, "Field type '{$type}' missing html_before." );
 			$this->assertStringContainsString( '</div>', $html, "Field type '{$type}' missing html_after." );
 			$this->assertStringContainsString( 'test_name', $html, "Field type '{$type}' missing name attribute." );
+
 		}
+
 	}
 
 	/**
@@ -102,6 +124,7 @@ class FieldsTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_fields_not_found() {
+
 		$args = [
 			'type'      => 'text_input',
 			'not_found' => 'Field Not Found Message',
@@ -110,6 +133,7 @@ class FieldsTest extends BaseTestCase {
 		$html = Fields::prepare( $args );
 
 		$this->assertEquals( 'Field Not Found Message', $html );
+
 	}
 
 	/**
@@ -118,6 +142,7 @@ class FieldsTest extends BaseTestCase {
 	 * @return void
 	 */
 	public function test_filter_output() {
+
 		$raw_html = '<input type="text" id="test" />';
 		$filtered = Fields::filter_output( $raw_html, '<p>', '</p>' );
 
@@ -129,5 +154,7 @@ class FieldsTest extends BaseTestCase {
 		$filtered = Fields::filter_output( $raw_html, '<p>', '</p>' );
 		$this->assertStringContainsString( '<p>', $filtered );
 		$this->assertStringContainsString( '</p>', $filtered );
+
 	}
+
 }

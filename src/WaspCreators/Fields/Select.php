@@ -40,4 +40,5 @@ class Select extends FieldCreator {
 			'selected' => 'selected',
 		],
 	];
+
 }

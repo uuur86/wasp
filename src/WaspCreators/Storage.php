@@ -46,7 +46,9 @@ class Storage {
 	 * @param string $mode Storage::SITE or Storage::NETWORK. Unknown values fall back to SITE.
 	 */
 	public function __construct( $mode = self::SITE ) {
+
 		$this->mode = ( self::NETWORK === $mode ) ? self::NETWORK : self::SITE;
+
 	}
 
 	/**
@@ -55,7 +57,9 @@ class Storage {
 	 * @return string
 	 */
 	public function get_mode() {
+
 		return $this->mode;
+
 	}
 
 	/**
@@ -64,7 +68,9 @@ class Storage {
 	 * @return bool
 	 */
 	public function is_network() {
+
 		return self::NETWORK === $this->mode;
+
 	}
 
 	/**
@@ -75,11 +81,15 @@ class Storage {
 	 * @return mixed
 	 */
 	public function get( $name, $fallback = false ) {
+
 		if ( $this->is_network() ) {
+
 			return \get_site_option( $name, $fallback );
+
 		}
 
 		return \get_option( $name, $fallback );
+
 	}
 
 	/**
@@ -93,11 +103,15 @@ class Storage {
 	 * @return bool
 	 */
 	public function add( $name, $value ) {
+
 		if ( $this->is_network() ) {
+
 			return \add_site_option( $name, $value );
+
 		}
 
 		return \add_option( $name, $value );
+
 	}
 
 	/**
@@ -108,11 +122,15 @@ class Storage {
 	 * @return bool
 	 */
 	public function update( $name, $value ) {
+
 		if ( $this->is_network() ) {
+
 			return \update_site_option( $name, $value );
+
 		}
 
 		return \update_option( $name, $value );
+
 	}
 
 	/**
@@ -122,10 +140,15 @@ class Storage {
 	 * @return bool
 	 */
 	public function delete( $name ) {
+
 		if ( $this->is_network() ) {
+
 			return \delete_site_option( $name );
+
 		}
 
 		return \delete_option( $name );
+
 	}
+
 }

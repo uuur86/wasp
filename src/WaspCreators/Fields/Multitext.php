@@ -41,4 +41,5 @@ class Multitext extends FieldCreator {
 			'value' => 'fval',
 		],
 	];
+
 }

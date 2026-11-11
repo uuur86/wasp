@@ -21,6 +21,7 @@ class Fields {
 	 * @return string The filtered HTML.
 	 */
 	public static function filter_output( $html, $before = null, $after = null ) {
+
 		$output = '';
 
 		$default_attr = [
@@ -60,16 +61,21 @@ class Fields {
 		];
 
 		if ( ! empty( $before ) ) {
+
 			$output .= \wp_kses( $before, $allowed_tags );
+
 		}
 
 		$output .= $html;
 
 		if ( ! empty( $after ) ) {
+
 			$output .= \wp_kses( $after, $allowed_tags );
+
 		}
 
 		return $output;
+
 	}
 
 
@@ -84,11 +90,15 @@ class Fields {
 	public static function prepare( $args ) {
 
 		if ( ! isset( $args['type'] ) ) {
+
 			return;
+
 		}
 
 		if ( ! empty( $args['not_found'] ) ) {
+
 			return $args['not_found'];
+
 		}
 
 		$type   = $args['type'];
@@ -96,15 +106,21 @@ class Fields {
 		$after  = null;
 
 		if ( isset( $args['html_before'] ) ) {
+
 			$before = $args['html_before'];
+
 		}
 
 		if ( isset( $args['html_after'] ) ) {
+
 			$after = $args['html_after'];
+
 		}
 
 		if ( empty( $type ) ) {
+
 			return;
+
 		}
 
 		$type_arr = [
@@ -116,15 +132,21 @@ class Fields {
 		];
 
 		if ( isset( $type_arr[ $type ] ) ) {
+
 			$type = $type_arr[ $type ];
+
 		} else {
+
 			$type = ucfirst( $type );
+
 		}
 
 		$obj_name = '\\WaspCreators\\Fields\\' . $type;
 
 		if ( ! method_exists( $obj_name, 'get' ) ) {
+
 			return;
+
 		}
 
 		$inherit = isset( $args['inherit'] ) && is_array( $args['inherit'] ) ? $args['inherit'] : null;
@@ -137,16 +159,21 @@ class Fields {
 		$html = call_user_func( $obj_name . '::get', $args );
 
 		if ( ! $html ) {
+
 			return;
+
 		}
 
 		$output = self::filter_output( $html, $before, $after );
 
 		if ( null !== $inherit ) {
+
 			$output = self::wrap_inherit( $output, $inherit, $theme, $options );
+
 		}
 
 		return $output;
+
 	}
 
 
@@ -170,10 +197,13 @@ class Fields {
 	 * @return string
 	 */
 	protected static function wrap_inherit( $output, array $inherit, $theme = null, $options = null ) {
+
 		$template = Templates::get( 'Inherit', $theme );
 
 		if ( empty( $template ) || empty( $template->main ) ) {
+
 			return $output;
+
 		}
 
 		$locked     = ! empty( $inherit['locked'] );
@@ -200,13 +230,16 @@ class Fields {
 		$attributes = ' data-wasp-state="' . \esc_attr( $state ) . '"';
 
 		if ( $auto ) {
+
 			$attributes .= ' data-wasp-auto="1" data-wasp-inherited="' . \esc_attr( (string) \wp_json_encode( $value ) ) . '"';
+
 		}
 
 		return '<div class="wasp-inheritable"' . $attributes . '>'
 			. $control
 			. '<div class="wasp-inheritable-field">' . $output . '</div>'
 			. '</div>';
+
 	}
 
 
@@ -225,35 +258,49 @@ class Fields {
 	 * @return mixed Value with labels in place of option values.
 	 */
 	public static function option_labels( $value, $options = null ) {
+
 		if ( ! is_array( $options ) || empty( $options ) ) {
+
 			return $value;
+
 		}
 
 		$labels = self::collect_option_labels( $options );
 
 		if ( empty( $labels ) ) {
+
 			return $value;
+
 		}
 
 		if ( is_array( $value ) ) {
+
 			$mapped = [];
 
 			foreach ( $value as $item ) {
+
 				$mapped[] = ( is_scalar( $item ) && isset( $labels[ (string) $item ] ) ) ? $labels[ (string) $item ] : $item;
+
 			}
 
 			return $mapped;
+
 		}
 
 		if ( is_bool( $value ) ) {
+
 			$value = $value ? '1' : '0';
+
 		}
 
 		if ( is_scalar( $value ) && isset( $labels[ (string) $value ] ) ) {
+
 			return $labels[ (string) $value ];
+
 		}
 
 		return $value;
+
 	}
 
 
@@ -268,21 +315,31 @@ class Fields {
 	 * @return array<string,string>
 	 */
 	protected static function collect_option_labels( array $options, $depth = 0 ) {
+
 		$labels = [];
 
 		foreach ( $options as $option ) {
+
 			if ( ! is_array( $option ) ) {
+
 				continue;
+
 			}
 
 			if ( isset( $option['value'], $option['label'] ) && is_scalar( $option['value'] ) && is_scalar( $option['label'] ) ) {
+
 				$labels[ (string) $option['value'] ] = (string) $option['label'];
+
 			} elseif ( 0 === $depth && isset( $option['options'] ) && is_array( $option['options'] ) ) {
+
 				$labels += self::collect_option_labels( $option['options'], 1 );
+
 			}
+
 		}
 
 		return $labels;
+
 	}
 
 
@@ -300,43 +357,63 @@ class Fields {
 	 * @return string
 	 */
 	public static function display_value( $value, $empty_label = '' ) {
+
 		$max_length = 200;
 
 		if ( is_array( $value ) ) {
+
 			$parts = [];
 
 			foreach ( $value as $item ) {
+
 				if ( is_scalar( $item ) && (string) $item !== '' ) {
+
 					$parts[] = (string) $item;
+
 				}
 
 				if ( count( $parts ) >= 20 ) {
+
 					break;
+
 				}
+
 			}
 
 			$value = implode( ', ', $parts );
+
 		} elseif ( is_bool( $value ) ) {
+
 			$value = $value ? '1' : '0';
+
 		} elseif ( ! is_scalar( $value ) ) {
+
 			$value = '';
+
 		}
 
 		$value = trim( str_replace( [ "\r\n", "\n", "\r", '|' ], ', ', (string) $value ) );
 
 		if ( $value === '' ) {
+
 			return (string) $empty_label;
+
 		}
 
 		if ( function_exists( 'mb_strlen' ) && mb_strlen( $value ) > $max_length ) {
+
 			return mb_substr( $value, 0, $max_length ) . '…';
+
 		}
 
 		if ( strlen( $value ) > $max_length ) {
+
 			return substr( $value, 0, $max_length ) . '…';
+
 		}
 
 		return $value;
+
 	}
 
 
@@ -353,5 +430,7 @@ class Fields {
 	public static function callback( $args ) {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML is safely prepared and contains form fields that cannot be escaped via esc_html/wp_kses_post.
 		echo self::prepare( $args );
+
 	}
+
 }

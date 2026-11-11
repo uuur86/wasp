@@ -49,4 +49,5 @@ class Radio extends FieldCreator {
 			'checked' => 'checked',
 		],
 	];
+
 }

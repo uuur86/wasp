@@ -39,4 +39,5 @@ class TaginputRegex extends Taginput {
 		'presets'    => 'presets',
 		'field_type' => 'field_type',
 	];
+
 }

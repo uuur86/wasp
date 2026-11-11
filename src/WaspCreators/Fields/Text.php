@@ -37,4 +37,5 @@ class Text extends FieldCreator {
 		'value'  => 'value',
 		'holder' => 'label',
 	];
+
 }

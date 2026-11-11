@@ -46,10 +46,12 @@ class FormReset {
 	 * @param array $params Reset parameters.
 	 */
 	public function __construct( Wasp $wasp, $params = [] ) {
+
 		$this->wasp         = $wasp;
 		$this->reset_params = $params;
 
 		$this->register_reset_ajax_handlers();
+
 	}
 
 	/**
@@ -60,29 +62,47 @@ class FormReset {
 	 * @return array Modified field arguments.
 	 */
 	public function process_field_args( $args, $field_args ) {
+
 		if ( $this->should_show_reset_button( $args['key'] ) ) {
+
 			$reset_button = $this->render_reset_button( $args['name'], $args['key'], $args['type'] );
 
 			// For taginput types, reset button goes before closing </div>.
 			if ( $args['type'] === 'taginput' ) {
+
 				if ( isset( $field_args['html_after'] ) ) {
+
 					$field_args['html_after'] = $reset_button . $field_args['html_after'];
+
 				} else {
+
 					$field_args['html_after'] = $reset_button . '</div>';
+
 				}
+
 			} elseif ( isset( $field_args['html_after'] ) ) {
+
 					$field_args['html_after'] .= $reset_button;
+
 			} else {
+
 				$field_args['html_after'] = $reset_button;
+
 			}
+
 		} elseif ( $args['type'] === 'taginput' ) {
+
 			// For taginput without reset, still need closing div.
 			if ( ! isset( $field_args['html_after'] ) ) {
+
 				$field_args['html_after'] = '</div>';
+
 			}
+
 		}
 
 		return $field_args;
+
 	}
 
 	/**
@@ -91,10 +111,13 @@ class FormReset {
 	 * @since 2.3.3
 	 */
 	public function enqueue_scripts() {
+
 		static $enqueued = false;
 
 		if ( $enqueued ) {
+
 			return;
+
 		}
 
 		$enqueued = true;
@@ -124,6 +147,7 @@ class FormReset {
 				],
 			]
 		);
+
 	}
 
 	/**
@@ -135,15 +159,19 @@ class FormReset {
 	 * @return bool
 	 */
 	public function should_show_reset_button( $field_name ) {
+
 		$show_on_fields = isset( $this->reset_params['show_on_fields'] ) ? $this->reset_params['show_on_fields'] : [];
 
 		// If empty, show on all fields.
 		if ( empty( $show_on_fields ) ) {
+
 			return true;
+
 		}
 
 		// Check if field is in the list.
 		return in_array( $field_name, $show_on_fields, true );
+
 	}
 
 	/**
@@ -161,8 +189,11 @@ class FormReset {
 	 * @return string Button HTML.
 	 */
 	public function render_reset_button( $field_name, $field_key, $field_type = 'text' ) {
+
 		if ( ! $this->should_show_reset_button( $field_key ) ) {
+
 			return '';
+
 		}
 
 		$params = $this->reset_params;
@@ -192,6 +223,7 @@ class FormReset {
 		$html .= '</span>';
 
 		return $html;
+
 	}
 
 	/**
@@ -200,8 +232,10 @@ class FormReset {
 	 * @since 2.3.3
 	 */
 	protected function register_reset_ajax_handlers() {
+
 		add_action( 'wp_ajax_wasp_reset_field', [ $this, 'ajax_reset_field' ] );
 		add_action( 'wp_ajax_wasp_reset_all_fields', [ $this, 'ajax_reset_all_fields' ] );
+
 	}
 
 	/**
@@ -210,17 +244,25 @@ class FormReset {
 	 * @return bool True if validation passes, false otherwise (sends JSON error).
 	 */
 	protected function validate_ajax_request() {
+
 		if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['nonce'] ) ), $this->reset_nonce_action ) ) {
+
 			wp_send_json_error( [ 'message' => esc_html__( 'Security check failed.', 'wasp' ) ] );
+
 			return false;
+
 		}
 
 		if ( ! current_user_can( $this->wasp->get_capability() ) ) {
+
 			wp_send_json_error( [ 'message' => esc_html__( 'Permission denied.', 'wasp' ) ] );
+
 			return false;
+
 		}
 
 		return true;
+
 	}
 
 	/**
@@ -239,6 +281,7 @@ class FormReset {
 		$requested = isset( $_POST['settings_name'] ) ? sanitize_text_field( wp_unslash( $_POST['settings_name'] ) ) : '';
 
 		return ( '' === $requested || $requested === $this->wasp->get_settings_name() );
+
 	}
 
 	/**
@@ -251,15 +294,19 @@ class FormReset {
 	 * @return mixed|null
 	 */
 	protected function reset_value( $field_name ) {
+
 		$fallback = $this->wasp->get_fallback_values();
 
 		if ( is_array( $fallback ) && array_key_exists( $field_name, $fallback ) ) {
+
 			return $fallback[ $field_name ];
+
 		}
 
 		$default_values = $this->wasp->get_default_values();
 
 		return array_key_exists( $field_name, $default_values ) ? $default_values[ $field_name ] : null;
+
 	}
 
 	/**
@@ -271,12 +318,17 @@ class FormReset {
 	 * @since 2.3.3
 	 */
 	public function ajax_reset_field() {
+
 		if ( ! $this->is_own_request() ) {
+
 			return;
+
 		}
 
 		if ( ! $this->validate_ajax_request() ) {
+
 			return;
+
 		}
 
 		// phpcs:ignore -- already nonce and capability checked in validate_ajax_request
@@ -287,8 +339,11 @@ class FormReset {
 		$storage       = $this->wasp->get_storage();
 
 		if ( empty( $field_name ) ) {
+
 			wp_send_json_error( [ 'message' => esc_html__( 'Field name is required.', 'wasp' ) ] );
+
 			return;
+
 		}
 
 		// Resolve the value server-side (secure, no encoding issues).
@@ -296,8 +351,11 @@ class FormReset {
 
 		// Get current settings from database.
 		$current_settings = $storage->get( $settings_name, [] );
+
 		if ( ! is_array( $current_settings ) ) {
+
 			$current_settings = [];
+
 		}
 
 		// With a fallback layer, a reset removes the override so the field inherits again.
@@ -305,9 +363,13 @@ class FormReset {
 		$default_values = $this->wasp->get_default_values();
 
 		if ( ! $this->wasp->has_fallback() && array_key_exists( $field_name, $default_values ) && $default_values[ $field_name ] !== null ) {
+
 			$current_settings[ $field_name ] = $default_values[ $field_name ];
+
 		} else {
+
 			unset( $current_settings[ $field_name ] );
+
 		}
 
 		$this->wasp->write_values( $current_settings );
@@ -321,6 +383,7 @@ class FormReset {
 				'field_type' => $field_type,
 			]
 		);
+
 	}
 
 	/**
@@ -329,12 +392,17 @@ class FormReset {
 	 * @since 2.3.3
 	 */
 	public function ajax_reset_all_fields() {
+
 		if ( ! $this->is_own_request() ) {
+
 			return;
+
 		}
 
 		if ( ! $this->validate_ajax_request() ) {
+
 			return;
+
 		}
 
 		$settings_name = $this->wasp->get_settings_name();
@@ -342,6 +410,7 @@ class FormReset {
 
 		// With a fallback layer, resetting everything means removing every override.
 		if ( $this->wasp->has_fallback() ) {
+
 			$this->wasp->write_values( [] );
 
 			wp_send_json_success(
@@ -350,27 +419,38 @@ class FormReset {
 					'values'  => $this->wasp->get_resolved_values(),
 				]
 			);
+
 			return;
+
 		}
 
 		// Get current settings from database (AJAX is stateless).
 		$current_settings = $storage->get( $settings_name, [] );
+
 		if ( ! is_array( $current_settings ) ) {
+
 			$current_settings = [];
+
 		}
 
 		$default_values = $this->wasp->get_default_values();
 
 		// Reset all fields to default values.
 		foreach ( $default_values as $key => $value ) {
+
 			$current_settings[ $key ] = $value;
+
 		}
 
 		// Remove any saved values that don't have defaults.
 		foreach ( array_keys( $current_settings ) as $key ) {
+
 			if ( ! isset( $default_values[ $key ] ) ) {
+
 				unset( $current_settings[ $key ] );
+
 			}
+
 		}
 
 		$this->wasp->write_values( $current_settings );
@@ -381,6 +461,7 @@ class FormReset {
 				'values'  => $default_values,
 			]
 		);
+
 	}
 
 	/**
@@ -391,6 +472,9 @@ class FormReset {
 	 * @return array
 	 */
 	public function get_reset_params() {
+
 		return $this->reset_params;
+
 	}
+
 }

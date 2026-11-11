@@ -40,11 +40,15 @@ class Templates {
 	 * @return bool Always returns false.
 	 */
 	public static function set( $path = null ) {
+
 		if ( ! empty( $path ) ) {
+
 			self::$path = $path;
+
 		}
 
 		return false;
+
 	}
 
 
@@ -64,10 +68,13 @@ class Templates {
 	 * @return string|false Resolved file path, or false if it does not exist.
 	 */
 	public static function resolve( $path = null ) {
+
 		if ( empty( $path ) ) {
+
 			$file = dirname( __DIR__, 2 ) . '/templates/default.wasp.php';
 
 			return is_file( $file ) ? $file : false;
+
 		}
 
 		$path = (string) $path;
@@ -75,9 +82,11 @@ class Templates {
 
 		// Absolute path.
 		if ( is_file( $file ) ) {
+
 			$real = realpath( $file );
 
 			return ( false !== $real ) ? $real : $file;
+
 		}
 
 		// Legacy relative path. Strip traversal segments before resolving.
@@ -86,6 +95,7 @@ class Templates {
 		$file     = strtr( $file, [ '/' => DIRECTORY_SEPARATOR ] );
 
 		return is_file( $file ) ? $file : false;
+
 	}
 
 
@@ -97,11 +107,15 @@ class Templates {
 	 * @return string
 	 */
 	protected static function with_suffix( $path ) {
+
 		if ( substr( $path, -9 ) === '.wasp.php' ) {
+
 			return $path;
+
 		}
 
 		return $path . '.wasp.php';
+
 	}
 
 
@@ -113,16 +127,23 @@ class Templates {
 	 * @return array
 	 */
 	protected static function load( $file ) {
+
 		if ( empty( $file ) ) {
+
 			return [];
+
 		}
 
 		if ( ! array_key_exists( $file, self::$sets ) ) {
-			$set                 = include $file;
+
+			$set = include $file;
+
 			self::$sets[ $file ] = is_array( $set ) ? $set : [];
+
 		}
 
 		return self::$sets[ $file ];
+
 	}
 
 
@@ -138,25 +159,35 @@ class Templates {
 	 * @return object|bool Template object or false if not found.
 	 */
 	public static function get( $type, $theme = null ) {
+
 		if ( empty( $theme ) ) {
+
 			$theme = self::$path;
+
 		}
 
 		if ( ! empty( $theme ) ) {
+
 			$custom = self::load( self::resolve( $theme ) );
 
 			if ( isset( $custom[ $type ] ) && is_array( $custom[ $type ] ) ) {
+
 				return (object) $custom[ $type ];
+
 			}
+
 		}
 
 		$default = self::load( self::resolve( null ) );
 
 		if ( isset( $default[ $type ] ) && is_array( $default[ $type ] ) ) {
+
 			return (object) $default[ $type ];
+
 		}
 
 		return false;
+
 	}
 
 
@@ -169,8 +200,11 @@ class Templates {
 	 * @return string|bool
 	 */
 	public static function append( $html, $args ) {
+
 		if ( ! $args || ! is_array( $args ) ) {
+
 			return null;
+
 		}
 		preg_match_all( '#\[[a-z0-9_]+\]#siu', $html, $attr );
 
@@ -180,28 +214,39 @@ class Templates {
 		$new_args = $attr;
 
 		foreach ( $args as $key => $val ) {
+
 			$keyname = '[' . $key . ']';
 
 			if ( ! isset( $new_args[ $keyname ] ) ) {
+
 				continue;
+
 			}
 
 			if ( ! in_array( $key, $excludes, true ) && ! is_array( $val ) ) {
+
 				$val = \esc_attr( $val );
+
 			} elseif ( 'text' === $key ) {
+
 				$val = \esc_html( $val );
+
 			}
 
 			$new_args[ $keyname ] = $val;
+
 		}
 
 		// Special handling for value - encode newlines for HTML attribute compatibility.
 		// Using "|" as separator instead of "&#10;" to avoid "&" being encoded by esc_attr().
 		if ( isset( $new_args['[value]'] ) && ! empty( $new_args['[value]'] ) ) {
+
 			$new_args['[value]'] = str_replace( [ "\r\n", "\n", "\r" ], '|', $new_args['[value]'] );
+
 		}
 
 		return strtr( $html, $new_args );
+
 	}
 
 	/**
@@ -211,6 +256,9 @@ class Templates {
 	 * @return string Filtered value.
 	 */
 	public static function taginput_value_filter( $value ) {
+
 		return str_replace( '|', "\n", $value );
+
 	}
+
 }

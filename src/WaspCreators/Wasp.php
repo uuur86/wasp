@@ -15,7 +15,9 @@
 namespace WaspCreators;
 
 if ( class_exists( '\\WaspCreators\\Wasp' ) || ! defined( 'ABSPATH' ) ) {
+
 	return;
+
 }
 
 use WaspCreators\Ajax;
@@ -381,6 +383,7 @@ class Wasp {
 	 * }
 	 */
 	public function __construct( string $page, string $setting_name, string $domain, $row = null, array $options = [] ) {
+
 		global $pagenow;
 
 		$storage_mode     = isset( $options['storage'] ) ? (string) $options['storage'] : Storage::SITE;
@@ -388,14 +391,18 @@ class Wasp {
 		$this->capability = $this->storage->is_network() ? 'manage_network_options' : 'manage_options';
 
 		if ( ! empty( $options['capability'] ) && is_string( $options['capability'] ) ) {
+
 			$this->capability = $options['capability'];
+
 		}
 
 		// The network admin cannot save through options.php, so network forms use their own handler.
 		$this->network_form = $this->storage->is_network() && function_exists( 'is_multisite' ) && \is_multisite();
 
 		if ( ! isset( $page ) || empty( $page ) ) {
+
 			return;
+
 		}
 
 		$this->ajax = new Ajax( $domain );
@@ -411,11 +418,13 @@ class Wasp {
 
 		// for multiple settings field.
 		if ( ! empty( $row ) ) {
+
 			$row           = $this->get_form_data( $row );
 			$this->indexes = $this->get_indexes();
 
 			// Find the latest row value.
 			if ( ! empty( $this->indexes ) && is_array( $this->indexes ) ) {
+
 				$indexes       = $this->indexes;
 				$last_row      = end( $indexes );
 				$indexes       = array_flip( $indexes );
@@ -423,18 +432,25 @@ class Wasp {
 
 				// If row value hasn`t set by get value.
 				if ( empty( $row ) ) {
+
 					$row = intval( $last_row );
 
 					// Increases row value when the latest setting has been setted.
 					if ( is_array( $last_settings ) && count( $last_settings ) > 0 ) {
+
 						++$row;
+
 					}
+
 				}
+
 			}
 
 			// Make sure to row value equal to least 1.
 			if ( $row < 1 ) {
+
 				$row = 1;
+
 			}
 
 			// Append the setting row.
@@ -445,25 +461,34 @@ class Wasp {
 
 			// Save index data.
 			if ( false === $this->storage->get( $this->index_name ) ) {
+
 				// Add index option value for first time.
 				$this->storage->add( $this->index_name, [ $this->settings_name => $this->settings_row ] );
+
 			} else {
+
 				// Update indexes.
 				$this->indexes[ $this->settings_name ] = $this->settings_row;
 
 				// Update index option value.
 				$this->storage->update( $this->index_name, $this->indexes );
+
 			}
+
 		}
 
 		// Append setting_values.
 		$settings = $this->storage->get( $this->settings_name );
 
 		if ( false === $settings ) {
+
 			$this->storage->add( $this->settings_name, [] );
 			$this->setting_values = [];
+
 		} else {
+
 			$this->setting_values = is_array( $settings ) ? $settings : [];
+
 		}
 
 		$this->is_ready = true;
@@ -472,27 +497,36 @@ class Wasp {
 		if ( $this->network_form && $pagenow === 'edit.php' ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( ! isset( $_GET['action'] ) || $_GET['action'] !== $page ) {
+
 				$this->is_ready = false;
+
 			}
 
 			return;
+
 		}
 
 		// returns if in wp option backend process.
 		if ( $pagenow === 'options.php' ) {
 			// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( ! isset( $_REQUEST['option_page'] ) || $_REQUEST['option_page'] !== $page ) {
+
 				$this->is_ready = false;
+
 			}
 
 			return;
+
 		}
 
 		if ( $pagenow !== 'admin.php' ) {
+
 			$this->is_ready = false;
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		} elseif ( isset( $_REQUEST['page'] ) && $_REQUEST['page'] !== $page ) {
+
 			$this->is_ready = false;
+
 		}
 
 		// Prepare the form.
@@ -503,9 +537,12 @@ class Wasp {
 		$option_updated = $this->storage->get( $updated_name );
 
 		if ( ! $this->check_errors() && $option_updated === '1' ) {
+
 			$this->form_updated = true;
 			$this->storage->delete( $updated_name );
+
 		}
+
 	}
 
 
@@ -517,8 +554,10 @@ class Wasp {
 	 * @param array  $args    Arguments.
 	 */
 	public function __call( $method, $args ) {
+
 		/* translators: %s: Method name. */
 		echo esc_html( sprintf( __( 'Method "%s" does not exist!', 'wasp' ), $method ) );
+
 	}
 
 
@@ -531,7 +570,9 @@ class Wasp {
 	 * @return bool
 	 */
 	public function is_ready() {
+
 		return $this->is_ready;
+
 	}
 
 
@@ -540,7 +581,9 @@ class Wasp {
 	 * Calls user defined method.
 	 */
 	public function user_func_hook() {
+
 		call_user_func( $this->user_func, $this );
+
 	}
 
 
@@ -553,18 +596,25 @@ class Wasp {
 	 * @param string|array $hook Form actions.
 	 */
 	public function wp_form_init( $hook ) {
+
 		if ( empty( $hook ) ) {
+
 			return;
+
 		}
 
 		if ( ! is_array( $hook ) ) {
+
 			$this->user_func = $hook;
+
 			\add_action( 'admin_init', [ $this, 'user_func_hook' ] );
 
 			return;
+
 		}
 
 		\add_action( 'admin_init', $hook );
+
 	}
 
 
@@ -575,8 +625,11 @@ class Wasp {
 	protected function prepare_get_vars() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		foreach ( $_GET as $get_key => $get_val ) {
+
 			$this->add_hidden_field( '__get__' . $get_key, $get_val );
+
 		}
+
 	}
 
 
@@ -589,21 +642,25 @@ class Wasp {
 	 * @return string|null
 	 */
 	public function get_form_data( $name ) {
+
 		$name = sanitize_key( $name );
 
 		// phpcs:ignore
 		if ( isset( $_GET[ $name ] ) ) {
 			// phpcs:ignore
 			return wp_unslash( $_GET[ $name ] );
+
 		}
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( isset( $_POST[ '__get__' . $name ] ) ) {
 			// phpcs:ignore
 			return wp_unslash( $_POST[ '__get__' . $name ] );
+
 		}
 
 		return null;
+
 	}
 
 
@@ -614,11 +671,15 @@ class Wasp {
 	 * @param array|string $link url of the redirect address.
 	 */
 	public function route( $link ) {
+
 		if ( is_array( $link ) ) {
+
 			$link = \add_query_arg( $link );
+
 		}
 
 		$this->add_hidden_field( '_wp_http_referer', $link );
+
 	}
 
 
@@ -629,8 +690,11 @@ class Wasp {
 	 * @param array $args  Section arguments.
 	 */
 	public function section( $args ) {
+
 		if ( ! is_array( $args ) ) {
+
 			return $this;
+
 		}
 
 		// Defaults.
@@ -654,11 +718,15 @@ class Wasp {
 		$before = $args['before'];
 
 		if ( empty( $name ) ) {
+
 			return $this;
+
 		}
 
 		if ( ! $cond ) {
+
 			return $this;
+
 		}
 
 		$this->section = $name;
@@ -672,10 +740,13 @@ class Wasp {
 		$this->current_section['id'] = $this->section;
 
 		if ( ! empty( $after ) || ! empty( $before ) ) {
+
 			$this->set_html( $before, $after );
+
 		}
 
 		return $this;
+
 	}
 
 
@@ -688,14 +759,19 @@ class Wasp {
 	 * @return void
 	 */
 	public function section_callback( $args ) {
+
 		if ( ! isset( $args['id'] ) ) {
+
 			return;
+
 		}
 
 		$sec_pos = strpos( $args['id'], '_section' );
 
 		if ( $sec_pos === -1 ) {
+
 			return;
+
 		}
 
 		$current = substr( $args['id'], 0, $sec_pos );
@@ -704,15 +780,19 @@ class Wasp {
 		if ( ! empty( $current['html_before'] ) ) {
 			//phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			echo $current['html_before'];
+
 		}
 
 		echo '<h2 class="title">' . \esc_html( $current['title'] ) . '</h2>';
+
 		echo '<p class="description">' . \esc_html( $current['desc'] ) . '</p>';
 
 		if ( ! empty( $current['html_after'] ) ) {
 			//phpcs:ignore
 			echo $current['html_after'];
+
 		}
+
 	}
 
 
@@ -724,21 +804,30 @@ class Wasp {
 	 * @param string|null $name Setting name.
 	 */
 	public function delete_setting( $name = null ) {
+
 		if ( empty( $name ) ) {
+
 			$name = $this->settings_name;
+
 		}
 
 		$indexes = $this->get_indexes();
 
 		// If setting has multiple rows then delete from settings index record.
 		if ( $indexes !== false ) {
+
 			unset( $indexes[ $name ] );
+
 			$this->storage->update( $this->index_name, $indexes );
+
 		}
 
 		if ( ! empty( $this->storage->get( $name, null ) ) ) {
+
 			$this->storage->delete( $name );
+
 		}
+
 	}
 
 
@@ -751,18 +840,25 @@ class Wasp {
 	 * @return mixed|null Setting value.
 	 */
 	public function get_value( $name ) {
+
 		// With a fallback layer: locked keys always show the fallback, an override
 		// (even an empty one) wins, otherwise the fallback value is shown.
 		if ( $this->has_fallback() ) {
+
 			if ( ! $this->is_locked( $name ) && is_array( $this->setting_values ) && array_key_exists( $name, $this->setting_values ) ) {
+
 				return $this->setting_values[ $name ];
+
 			}
 
 			if ( array_key_exists( $name, $this->fallback_values ) ) {
+
 				return $this->fallback_values[ $name ];
+
 			}
 
 			return isset( $this->default_values[ $name ] ) ? $this->default_values[ $name ] : null;
+
 		}
 
 		$value = $this->get_setting( $name );
@@ -770,15 +866,20 @@ class Wasp {
 		// If we have a saved value (including empty string), use it.
 		// Only fall back to default when the key doesn't exist at all (null).
 		if ( $value !== null ) {
+
 			return $value;
+
 		}
 
 		// Otherwise use default value if available.
 		if ( isset( $this->default_values[ $name ] ) ) {
+
 			return $this->default_values[ $name ];
+
 		}
 
 		return $value;
+
 	}
 
 
@@ -790,7 +891,9 @@ class Wasp {
 	 * @return string
 	 */
 	public function get_settings_name() {
+
 		return $this->settings_name;
+
 	}
 
 
@@ -801,7 +904,9 @@ class Wasp {
 	 * @return array
 	 */
 	public function get_default_values() {
+
 		return $this->default_values;
+
 	}
 
 
@@ -812,11 +917,15 @@ class Wasp {
 	 * @return array|null
 	 */
 	public function get_settings() {
+
 		if ( empty( $this->setting_values ) ) {
+
 			return null;
+
 		}
 
 		return $this->setting_values;
+
 	}
 
 
@@ -829,11 +938,15 @@ class Wasp {
 	 * @return mixed|null Setting value.
 	 */
 	public function get_setting( $name ) {
+
 		if ( isset( $this->setting_values[ $name ] ) ) {
+
 			return $this->setting_values[ $name ];
+
 		}
 
 		return null;
+
 	}
 
 

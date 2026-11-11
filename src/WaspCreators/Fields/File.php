@@ -20,4 +20,5 @@ class File extends FieldCreator {
 	 * @var array
 	 */
 	public $params = [];
+
 }

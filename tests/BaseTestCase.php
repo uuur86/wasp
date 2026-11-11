@@ -20,7 +20,9 @@ class BaseTestCase extends TestCase {
 	 * Summary of setUp
 	 */
 	protected function setUp(): void {
+
 		parent::setUp();
+
 		Monkey\setUp();
 
 		$_GET     = [];
@@ -36,13 +38,18 @@ class BaseTestCase extends TestCase {
 		Monkey\Functions\when( 'sanitize_key' )->returnArg( 1 );
 		Monkey\Functions\when( 'wp_unslash' )->returnArg( 1 );
 		Monkey\Functions\when( 'wp_kses' )->returnArg( 1 );
+
 	}
 
 	/**
 	 * Summary of tearDown
 	 */
 	protected function tearDown(): void {
+
 		Monkey\tearDown();
+
 		parent::tearDown();
+
 	}
+
 }
